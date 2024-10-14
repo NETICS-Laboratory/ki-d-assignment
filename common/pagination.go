@@ -1,7 +1,7 @@
 package common
 
 import (
-	"gin-gorm-clean-template/entity"
+	"ki-d-assignment/entity"
 	"math"
 
 	"gorm.io/gorm"

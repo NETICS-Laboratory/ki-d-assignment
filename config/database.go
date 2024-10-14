@@ -2,7 +2,7 @@ package config
 
 import (
 	"fmt"
-	"gin-gorm-clean-template/entity"
+	"ki-d-assignment/entity"
 	"os"
 
 	"gorm.io/driver/postgres"
