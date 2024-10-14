@@ -8,6 +8,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"errors"
+
 	// "fmt"
 	"io"
 	"os"
@@ -87,7 +88,7 @@ func EncryptAESCBCFile(plainfile []byte) ([]byte, error) {
 }
 
 // AES CBC decryption function
-func decryptAESCBC(ciphertext string) (string, error) {
+func DecryptAESCBC(ciphertext string) (string, error) {
 	cipherdata, err := base64.URLEncoding.DecodeString(ciphertext)
 	if err != nil {
 		return "", err
@@ -123,7 +124,7 @@ func decryptAESCBC(ciphertext string) (string, error) {
 	return result, nil
 }
 
-func decryptAESCBCFile(cipherfile []byte) ([]byte, error) {
+func DecryptAESCBCFile(cipherfile []byte) ([]byte, error) {
 
 	key := generateAESKey()
 	block, err := aes.NewCipher(key)
