@@ -1,12 +1,12 @@
 package main
 
 import (
-	"gin-gorm-clean-template/common"
-	"gin-gorm-clean-template/config"
-	"gin-gorm-clean-template/controller"
-	"gin-gorm-clean-template/repository"
-	"gin-gorm-clean-template/routes"
-	"gin-gorm-clean-template/service"
+	"ki-d-assignment/common"
+	"ki-d-assignment/config"
+	"ki-d-assignment/controller"
+	"ki-d-assignment/repository"
+	"ki-d-assignment/routes"
+	"ki-d-assignment/service"
 	"net/http"
 	"os"
 
@@ -36,7 +36,7 @@ func main() {
 	server := gin.Default()
 	routes.UserRoutes(server, userController, jwtService)
 
-	port := os.Getenv("PORT")
+	port := os.Getenv("DB_PORT")
 	if port == "" {
 		port = "8000"
 	}

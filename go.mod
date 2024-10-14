@@ -1,6 +1,6 @@
-module gin-gorm-clean-template
+module ki-d-assignment
 
-go 1.20
+go 1.23
 
 require (
 	github.com/gin-gonic/gin v1.9.0
