@@ -1,10 +1,10 @@
 package controller
 
 import (
-	"gin-gorm-clean-template/common"
-	"gin-gorm-clean-template/dto"
-	"gin-gorm-clean-template/entity"
-	"gin-gorm-clean-template/service"
+	"ki-d-assignment/common"
+	"ki-d-assignment/dto"
+	"ki-d-assignment/entity"
+	"ki-d-assignment/service"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
