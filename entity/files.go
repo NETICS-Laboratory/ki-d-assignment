@@ -16,7 +16,6 @@ type Files struct {
 	Timestamp
 }
 
-// TODO: Fix encrypt parameters
 func (f *Files) BeforeCreate(tx *gorm.DB) error {
 	if encrypted, err := utils.EncryptAESCBCFile([]byte(f.Files_AES)); err == nil {
 		f.Files_AES = string(encrypted)

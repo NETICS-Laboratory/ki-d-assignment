@@ -14,8 +14,6 @@ import (
 	// "github.com/joho/godotenv"
 )
 
-// TODO: Refactor the key parameter
-
 // Padding plaintext to match block size (PKCS7 padding)
 func pkcs7Padding(data []byte, blockSize int) []byte {
 	padding := blockSize - len(data)%blockSize
@@ -156,35 +154,3 @@ func decryptAESCBCFile(cipherfile []byte) ([]byte, error) {
 
 	return result, nil
 }
-
-// func main() {
-// 	err := godotenv.Load()
-// 	if err != nil {
-// 		panic(err.Error())
-// 	}
-
-// 	// Example passphrase to generate the AES key
-// 	passphrase := os.Getenv("KEY")
-// 	fmt.Println("passphrase: ", passphrase)
-// 	// key := []byte(os.Getenv("KEY"))
-// 	key := generateAESKey(passphrase)
-
-// 	// Example plaintext
-// 	plaintext := "This is a secret message!"
-
-// 	// Encrypt the plaintext
-// 	encrypted, err := EncryptAESCBC(plaintext, key)
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	fmt.Println("key:", key)
-
-// 	fmt.Println("Encrypted:", encrypted)
-
-// 	// Decrypt the ciphertext
-// 	decrypted, err := decryptAESCBC(encrypted, key)
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	fmt.Println("Decrypted:", decrypted)
-// }
