@@ -14,8 +14,6 @@ import (
 	// "github.com/joho/godotenv"
 )
 
-// TODO: Refactor the key parameter
-
 // Padding plaintext to match block size (PKCS7 padding)
 func pkcs7Padding(data []byte, blockSize int) []byte {
 	padding := blockSize - len(data)%blockSize

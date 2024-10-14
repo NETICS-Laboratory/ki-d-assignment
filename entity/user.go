@@ -31,7 +31,6 @@ type User struct {
 	Files []Files `json:"files" gorm:"foreignKey:UserID" binding:"required"`
 }
 
-// TODO: Fix encrypt parameters, Add Decrypt, Testing
 func (u *User) BeforeCreate(tx *gorm.DB) error {
 	if encrypted, err := utils.EncryptAESCBC(u.Username_AES); err == nil {
 		u.Username_AES = string(encrypted)
