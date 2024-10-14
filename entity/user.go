@@ -20,9 +20,6 @@ type (
         ID_card_AES         string      `json:"id_card_aes" binding:"required"`
         ID_card_DES         string      `json:"id_card_des" binding:"required"`
         ID_card_RC4         string      `json:"id_card_rc4" binding:"required"`
-		Video_AES           string      `json:"video_aes" binding:"required"`
-		Video_DES           string      `json:"video_des" binding:"required"`
-		Video_RC4           string      `json:"video_rc4" binding:"required"`
     }
 
 	Credential struct {
@@ -44,13 +41,13 @@ type (
 )
 
 type User struct {
-    ID  					uuid.UUID 	`gorm:"primary_key;not_null;type:char(36)" json:"id"`
+    ID  		  uuid.UUID 	`gorm:"primary_key;not_null;type:char(36)" json:"id"`
     Identity
     Credential
     Key
 
-    Files           []Files             `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" binding:"required" json:"files"`
-    AllowedUsers    []AllowedUser       `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" binding:"required" json:"allowed_users"`
+    Files         []Files        `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" binding:"required" json:"files"`
+    AllowedUsers  []AllowedUser  `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" binding:"required" json:"allowed_users"`
 
     Timestamp
 }
