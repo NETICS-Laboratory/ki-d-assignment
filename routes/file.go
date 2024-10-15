@@ -12,5 +12,6 @@ func FileRoutes(router *gin.Engine, fileController controller.FileController, jw
 	fileRoutes := router.Group("/api/files")
 	{
 		fileRoutes.POST("/upload", middleware.Authenticate(jwtService), fileController.UploadFile)
+		fileRoutes.GET("/get-files", middleware.Authenticate(jwtService), fileController.GetUserFiles)
 	}
 }

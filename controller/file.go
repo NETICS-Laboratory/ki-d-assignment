@@ -11,6 +11,7 @@ import (
 
 type FileController interface {
 	UploadFile(ctx *gin.Context)
+	GetUserFiles(ctx *gin.Context)
 }
 
 type fileController struct {
@@ -53,5 +54,26 @@ func (fc *fileController) UploadFile(ctx *gin.Context) {
 	}
 
 	res := common.BuildResponse(true, "File Berhasil Diunggah", uploadedFile)
+	ctx.JSON(http.StatusOK, res)
+}
+
+func (fc *fileController) GetUserFiles(ctx *gin.Context) {
+
+	token := ctx.MustGet("token").(string)
+	userID, err := fc.jwtService.GetUserIDByToken(token)
+	if err != nil {
+		response := common.BuildErrorResponse("Gagal Memproses Request", "Token Tidak Valid", nil)
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, response)
+		return
+	}
+
+	files, err := fc.fileService.GetUserFiles(ctx.Request.Context(), userID)
+	if err != nil {
+		res := common.BuildErrorResponse("Gagal Mendapatkan File", err.Error(), common.EmptyObj{})
+		ctx.JSON(http.StatusInternalServerError, res)
+		return
+	}
+
+	res := common.BuildResponse(true, "File Ditemukan", files)
 	ctx.JSON(http.StatusOK, res)
 }
