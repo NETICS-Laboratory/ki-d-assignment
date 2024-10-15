@@ -10,11 +10,33 @@ import (
 
 // IsValidFileName checks if the file name contains valid characters and extensions
 func IsValidFileName(fileName string) bool {
+	// Allowed file extensions
 	ext := strings.ToLower(filepath.Ext(fileName))
-	if ext != ".jpeg" && ext != ".jpg" && ext != ".png" {
+	validExtensions := map[string]bool{
+		".jpeg": true,
+		".jpg":  true,
+		".png":  true,
+		".pdf":  true,
+		".doc":  true,
+		".docx": true,
+		".xls":  true,
+		".xlsx": true,
+		".mp4":  true,
+	}
+
+	// Check if file extension is valid
+	if _, valid := validExtensions[ext]; !valid {
 		return false
 	}
-	// Optionally, add more validations for file name, such as checking for illegal characters.
+
+	// Optionally, add more validation for illegal characters
+	illegalChars := []string{"<", ">", ":", "\"", "/", "\\", "|", "?", "*"}
+	for _, char := range illegalChars {
+		if strings.Contains(fileName, char) {
+			return false
+		}
+	}
+
 	return true
 }
 
