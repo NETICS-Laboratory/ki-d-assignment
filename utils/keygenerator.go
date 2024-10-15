@@ -5,7 +5,7 @@ import (
 	"io"
 )
 
-func GeneraretSecretKey() ([]byte, error) {
+func GenerateSecretKey() ([]byte, error) {
 	// initiate secret key
 	// key := make([]byte, 16) // AES-128
 	// key := make([]byte, 24) // AES-192
@@ -17,7 +17,7 @@ func GeneraretSecretKey() ([]byte, error) {
 	return key, nil
 }
 
-func GeneraretSecretKey8Byte() ([]byte, error) {
+func GenerateSecretKey8Byte() ([]byte, error) {
 	key := make([]byte, 8) //
 	_, err := io.ReadFull(rand.Reader, key)
 	if err != nil {

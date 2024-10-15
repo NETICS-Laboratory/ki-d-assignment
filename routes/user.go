@@ -18,5 +18,6 @@ func UserRoutes(router *gin.Engine, UserController controller.UserController, jw
 		// userRoutes.PUT("/update", middleware.Authenticate(jwtService), UserController.UpdateUser)
 		userRoutes.GET("/me", middleware.Authenticate(jwtService), UserController.MeUser)
 		userRoutes.GET("/me-decrypted", middleware.Authenticate(jwtService), UserController.MeUserDecrypted)
+		userRoutes.GET("/idcard-decrypted", middleware.Authenticate(jwtService), UserController.DecryptUserIDCard)
 	}
 }

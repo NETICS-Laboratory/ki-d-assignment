@@ -20,6 +20,7 @@ type UserController interface {
 	// UpdateUser(ctx *gin.Context)
 	MeUser(ctx *gin.Context)
 	MeUserDecrypted(ctx *gin.Context)
+	DecryptUserIDCard(ctx *gin.Context)
 }
 
 type userController struct {
@@ -187,5 +188,25 @@ func (uc *userController) MeUserDecrypted(ctx *gin.Context) {
 	}
 
 	res := common.BuildResponse(true, "Berhasil Mendapatkan User", result)
+	ctx.JSON(http.StatusOK, res)
+}
+
+func (uc *userController) DecryptUserIDCard(ctx *gin.Context) {
+	token := ctx.MustGet("token").(string)
+	userID, err := uc.jwtService.GetUserIDByToken(token)
+	if err != nil {
+		response := common.BuildErrorResponse("Gagal Memproses Request", "Token Tidak Valid", nil)
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, response)
+		return
+	}
+
+	err = uc.userService.DecryptUserIDCard(ctx.Request.Context(), userID)
+	if err != nil {
+		res := common.BuildErrorResponse("Gagal Melakukan Dekripsi File", err.Error(), common.EmptyObj{})
+		ctx.JSON(http.StatusBadRequest, res)
+		return
+	}
+
+	res := common.BuildResponse(true, "Berhasil Melakukan Dekripsi File", true)
 	ctx.JSON(http.StatusOK, res)
 }

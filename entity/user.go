@@ -95,7 +95,20 @@ func (u *User) BeforeCreate(tx *gorm.DB) error {
 	}
 
 	//encrypt link to id card
-	u.ID_Card_AES, u.ID_Card_DES, u.ID_Card_RC4, err = helpers.EncryptData(u.ID_Card_AES, u.SecretKey, u.SecretKey8Byte)
+	u.ID_Card_AES, _, _, err = helpers.EncryptData(u.ID_Card_AES, u.SecretKey, u.SecretKey8Byte)
+	// fmt.Println(u.ID_Card_AES)
+	if err != nil {
+		return err
+	}
+
+	_, u.ID_Card_DES, _, err = helpers.EncryptData(u.ID_Card_DES, u.SecretKey, u.SecretKey8Byte)
+	// fmt.Println(u.ID_Card_DES)
+	if err != nil {
+		return err
+	}
+
+	_, _, u.ID_Card_RC4, err = helpers.EncryptData(u.ID_Card_RC4, u.SecretKey, u.SecretKey8Byte)
+	// fmt.Println(u.ID_Card_RC4)
 	if err != nil {
 		return err
 	}
