@@ -149,6 +149,7 @@ func DecryptAndSaveFiles(filePath string, aesFilePath string, rc4FilePath string
 		return err
 	}
 	fmt.Printf("AES File Decryption Time: %.6f ms\n", float64(time.Since(startAES).Nanoseconds())/1e6)
+	fmt.Printf("AES Decrypted File Size: %d bytes\n\n", len(decryptedAES))
 
 	decryptedAESPath := filepath.Join(aesDecryptedFolder, removeExtension(filepath.Base(aesFilePath), ".aes"))
 	if err := os.WriteFile(decryptedAESPath, decryptedAES, 0644); err != nil {
@@ -170,6 +171,7 @@ func DecryptAndSaveFiles(filePath string, aesFilePath string, rc4FilePath string
 		return err
 	}
 	fmt.Printf("RC4 File Decryption Time: %.6f ms\n", float64(time.Since(startRC4).Nanoseconds())/1e6)
+	fmt.Printf("RC4 Decrypted File Size: %d bytes\n\n", len(decryptedRC4))
 
 	decryptedRC4Path := filepath.Join(rc4DecryptedFolder, removeExtension(filepath.Base(rc4FilePath), ".rc4"))
 	if err := os.WriteFile(decryptedRC4Path, decryptedRC4, 0644); err != nil {
@@ -191,6 +193,7 @@ func DecryptAndSaveFiles(filePath string, aesFilePath string, rc4FilePath string
 		return err
 	}
 	fmt.Printf("DES File Decryption Time: %.6f ms\n\n", float64(time.Since(startDES).Nanoseconds())/1e6)
+	fmt.Printf("DES Decrypted File Size: %d bytes\n\n", len(decryptedDES))
 
 	decryptedDESPath := filepath.Join(desDecryptedFolder, removeExtension(filepath.Base(desFilePath), ".des"))
 	if err := os.WriteFile(decryptedDESPath, decryptedDES, 0644); err != nil {
