@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"ki-d-assignment/dto"
 	"ki-d-assignment/entity"
+	"ki-d-assignment/helpers"
 	"ki-d-assignment/repository"
 	"ki-d-assignment/utils"
 
@@ -15,6 +16,7 @@ import (
 type FileService interface {
 	UploadFile(ctx context.Context, fileDTO dto.FileCreateDto, userID uuid.UUID) (entity.Files, error)
 	GetUserFiles(ctx context.Context, userID uuid.UUID) ([]entity.Files, error)
+	GetUserFileDecryptedByID(ctx context.Context, fileID uuid.UUID, userID uuid.UUID) (dto.FileDecryptedResponse, error)
 }
 
 type fileService struct {
@@ -85,4 +87,41 @@ func (fs *fileService) GetUserFiles(ctx context.Context, userID uuid.UUID) ([]en
 		return nil, err
 	}
 	return files, nil
+}
+
+func (fs *fileService) GetUserFileDecryptedByID(ctx context.Context, fileID uuid.UUID, userID uuid.UUID) (dto.FileDecryptedResponse, error) {
+	// 1. Find the user by ID to get the secret keys
+	file, err := fs.fileRepository.GetFileByIDAndUserID(ctx, fileID, userID)
+	if err != nil {
+		return dto.FileDecryptedResponse{}, fmt.Errorf("file tidak ditemukan atau tidak memiliki akses: %v", err)
+	}
+
+	// 2. Find the specific file by ID
+	user, err := fs.userRepository.FindUserByID(ctx, userID)
+	if err != nil {
+		return dto.FileDecryptedResponse{}, fmt.Errorf("gagal menemukan pengguna: %v", err)
+	}
+
+	// 3. Get the file paths (AES, RC4, DES) from the file entity
+	decryptedAESPath, decryptedRC4Path, decryptedDESPath, err := helpers.DecryptDataReturnIndiviual(
+		file.Files_AES, file.Files_RC4, file.Files_DES, user.SecretKey, user.SecretKey8Byte)
+	if err != nil {
+		return dto.FileDecryptedResponse{}, fmt.Errorf("gagal melakukan dekripsi jalur file: %v", err)
+	}
+
+	// 4. Call the utility function to decrypt the files and save them in the "decrypted" folder
+	filePath := fmt.Sprintf("uploads/%s", user.Username)
+	err = utils.DecryptAndSaveFiles(filePath, decryptedAESPath, decryptedRC4Path, decryptedDESPath, user.SecretKey, user.SecretKey8Byte)
+	if err != nil {
+		return dto.FileDecryptedResponse{}, fmt.Errorf("gagal melakukan dekripsi file dan menyimpannya: %v", err)
+	}
+
+	decryptedResponse := dto.FileDecryptedResponse{
+		ID:            file.ID,
+		Decrypted_AES: decryptedAESPath,
+		Decrypted_RC4: decryptedRC4Path,
+		Decrypted_DES: decryptedDESPath,
+	}
+
+	return decryptedResponse, nil
 }
