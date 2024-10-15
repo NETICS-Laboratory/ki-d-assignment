@@ -14,6 +14,7 @@ import (
 
 type FileService interface {
 	UploadFile(ctx context.Context, fileDTO dto.FileCreateDto, userID uuid.UUID) (entity.Files, error)
+	GetUserFiles(ctx context.Context, userID uuid.UUID) ([]entity.Files, error)
 }
 
 type fileService struct {
@@ -76,4 +77,12 @@ func (fs *fileService) UploadFile(ctx context.Context, fileDTO dto.FileCreateDto
 		return entity.Files{}, err
 	}
 	return uploadedFile, nil
+}
+
+func (fs *fileService) GetUserFiles(ctx context.Context, userID uuid.UUID) ([]entity.Files, error) {
+	files, err := fs.fileRepository.GetFilesByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	return files, nil
 }
