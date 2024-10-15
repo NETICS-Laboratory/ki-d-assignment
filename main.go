@@ -42,7 +42,7 @@ func main() {
 	routes.UserRoutes(server, userController, jwtService)
 	routes.FileRoutes(server, fileController, jwtService)
 
-	port := os.Getenv("DB_PORT")
+	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8090"
 	}
