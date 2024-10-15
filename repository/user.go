@@ -10,11 +10,11 @@ import (
 
 type UserRepository interface {
 	RegisterUser(ctx context.Context, user entity.User) (entity.User, error)
-	GetAllUser(ctx context.Context) ([]entity.User, error)
-	FindUserByEmail(ctx context.Context, email string) (entity.User, error)
+	// GetAllUser(ctx context.Context) ([]entity.User, error)
+	FindUserByUsername(ctx context.Context, username string) (entity.User, error)
 	FindUserByID(ctx context.Context, userID uuid.UUID) (entity.User, error)
-	DeleteUser(ctx context.Context, userID uuid.UUID) error
-	UpdateUser(ctx context.Context, user entity.User) error
+	// DeleteUser(ctx context.Context, userID uuid.UUID) (error)
+	// UpdateUser(ctx context.Context, user entity.User) (error)
 }
 
 type userConnection struct {
@@ -28,7 +28,6 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 }
 
 func (db *userConnection) RegisterUser(ctx context.Context, user entity.User) (entity.User, error) {
-	user.ID = uuid.New()
 	uc := db.connection.Create(&user)
 	if uc.Error != nil {
 		return entity.User{}, uc.Error
@@ -36,18 +35,18 @@ func (db *userConnection) RegisterUser(ctx context.Context, user entity.User) (e
 	return user, nil
 }
 
-func (db *userConnection) GetAllUser(ctx context.Context) ([]entity.User, error) {
-	var listUser []entity.User
-	tx := db.connection.Find(&listUser)
-	if tx.Error != nil {
-		return nil, tx.Error
-	}
-	return listUser, nil
-}
+// func(db *userConnection) GetAllUser(ctx context.Context) ([]entity.User, error) {
+// 	var listUser []entity.User
+// 	tx := db.connection.Find(&listUser)
+// 	if tx.Error != nil {
+// 		return nil, tx.Error
+// 	}
+// 	return listUser, nil
+// }
 
-func (db *userConnection) FindUserByEmail(ctx context.Context, email string) (entity.User, error) {
+func (db *userConnection) FindUserByUsername(ctx context.Context, username string) (entity.User, error) {
 	var user entity.User
-	ux := db.connection.Where("email = ?", email).Take(&user)
+	ux := db.connection.Where("username = ?", username).Take(&user)
 	if ux.Error != nil {
 		return user, ux.Error
 	}
@@ -63,18 +62,18 @@ func (db *userConnection) FindUserByID(ctx context.Context, userID uuid.UUID) (e
 	return user, nil
 }
 
-func (db *userConnection) DeleteUser(ctx context.Context, userID uuid.UUID) error {
-	uc := db.connection.Delete(&entity.User{}, &userID)
-	if uc.Error != nil {
-		return uc.Error
-	}
-	return nil
-}
+// func(db *userConnection) DeleteUser(ctx context.Context, userID uuid.UUID) (error) {
+// 	uc := db.connection.Delete(&entity.User{}, &userID)
+// 	if uc.Error != nil {
+// 		return uc.Error
+// 	}
+// 	return nil
+// }
 
-func (db *userConnection) UpdateUser(ctx context.Context, user entity.User) error {
-	uc := db.connection.Updates(&user)
-	if uc.Error != nil {
-		return uc.Error
-	}
-	return nil
-}
+// func(db *userConnection) UpdateUser(ctx context.Context, user entity.User) (error) {
+// 	uc := db.connection.Updates(&user)
+// 	if uc.Error != nil {
+// 		return uc.Error
+// 	}
+// 	return nil
+// }

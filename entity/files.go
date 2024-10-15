@@ -1,25 +1,17 @@
 package entity
 
 import (
-	"ki-d-assignment/utils"
-
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 type Files struct {
-	ID        uuid.UUID `json:"id" gorm:"type:uuid;primaryKey"`
+	ID        uuid.UUID `gorm:"primary_key;not_null;type:char(36)" json:"id"`
 	Name      string    `json:"name" binding:"required"`
 	Files_AES string    `json:"files_aes" binding:"required"`
-
-	UserID uuid.UUID `json:"user_id" gorm:"type:uuid;foreignKey:Users"`
+	SecretKey string    `json:"secret" binding:"required"`
+	IV        string    `json:"iv" binding:"required"`
+	Signature string    `json:"signature" binding:"required"`
+	// take the user_id from users table
+	UserID uuid.UUID `gorm:"foreignKey;type:char(36)" json:"user_id"`
 	Timestamp
-}
-
-func (f *Files) BeforeCreate(tx *gorm.DB) error {
-	if encrypted, err := utils.EncryptAESCBCFile([]byte(f.Files_AES)); err == nil {
-		f.Files_AES = string(encrypted)
-	}
-
-	return nil
 }
