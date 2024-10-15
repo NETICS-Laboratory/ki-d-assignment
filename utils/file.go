@@ -1,11 +1,13 @@
 package utils
 
 import (
+	"fmt"
 	"io"
 	"mime/multipart"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // IsValidFileName checks if the file name contains valid characters and extensions
@@ -67,20 +69,29 @@ func UploadFile(fileHeader *multipart.FileHeader, filePath string, secretKey []b
 	}
 
 	// Encrypt file using AES, RC4, and DES
+	startAES := time.Now()
 	encryptedFileAES, err := EncryptFileBytesAES(fileData, secretKey)
 	if err != nil {
 		return "", "", "", err
 	}
+	fmt.Printf("AES File Encryption Time: %.6f ms\n", float64(time.Since(startAES).Nanoseconds())/1e6)
+	fmt.Printf("AES Encrypted File Size: %d bytes\n\n", len(encryptedFileAES))
 
+	startRC4 := time.Now()
 	encryptedFileRC4, err := EncryptFileBytesRC4(fileData, secretKey)
 	if err != nil {
 		return "", "", "", err
 	}
+	fmt.Printf("RC4 File Encryption Time: %.6f ms\n", float64(time.Since(startRC4).Nanoseconds())/1e6)
+	fmt.Printf("RC4 Encrypted File Size: %d bytes\n\n", len(encryptedFileRC4))
 
+	startDES := time.Now()
 	encryptedFileDES, err := EncryptFileBytesDES(fileData, secretKey8Byte)
 	if err != nil {
 		return "", "", "", err
 	}
+	fmt.Printf("DES File Encryption Time: %.6f ms\n", float64(time.Since(startDES).Nanoseconds())/1e6)
+	fmt.Printf("DES Encrypted File Size: %d bytes\n\n", len(encryptedFileDES))
 
 	// Store encrypted AES file with .aes extension
 	aesPath := filepath.Join(filePath, "aes")
@@ -132,10 +143,13 @@ func DecryptAndSaveFiles(filePath string, aesFilePath string, rc4FilePath string
 	if err != nil {
 		return err
 	}
+	startAES := time.Now()
 	decryptedAES, err := DecryptFileBytesAES(aesEncryptedData, secretKey)
 	if err != nil {
 		return err
 	}
+	fmt.Printf("AES File Decryption Time: %.6f ms\n", float64(time.Since(startAES).Nanoseconds())/1e6)
+
 	decryptedAESPath := filepath.Join(aesDecryptedFolder, removeExtension(filepath.Base(aesFilePath), ".aes"))
 	if err := os.WriteFile(decryptedAESPath, decryptedAES, 0644); err != nil {
 		return err
@@ -150,10 +164,13 @@ func DecryptAndSaveFiles(filePath string, aesFilePath string, rc4FilePath string
 	if err != nil {
 		return err
 	}
+	startRC4 := time.Now()
 	decryptedRC4, err := DecryptFileBytesRC4(rc4EncryptedData, secretKey)
 	if err != nil {
 		return err
 	}
+	fmt.Printf("RC4 File Decryption Time: %.6f ms\n", float64(time.Since(startRC4).Nanoseconds())/1e6)
+
 	decryptedRC4Path := filepath.Join(rc4DecryptedFolder, removeExtension(filepath.Base(rc4FilePath), ".rc4"))
 	if err := os.WriteFile(decryptedRC4Path, decryptedRC4, 0644); err != nil {
 		return err
@@ -168,10 +185,13 @@ func DecryptAndSaveFiles(filePath string, aesFilePath string, rc4FilePath string
 	if err != nil {
 		return err
 	}
+	startDES := time.Now()
 	decryptedDES, err := DecryptFileBytesDES(desEncryptedData, secretKey8Byte)
 	if err != nil {
 		return err
 	}
+	fmt.Printf("DES File Decryption Time: %.6f ms\n\n", float64(time.Since(startDES).Nanoseconds())/1e6)
+
 	decryptedDESPath := filepath.Join(desDecryptedFolder, removeExtension(filepath.Base(desFilePath), ".des"))
 	if err := os.WriteFile(decryptedDESPath, decryptedDES, 0644); err != nil {
 		return err
