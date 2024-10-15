@@ -3,6 +3,7 @@ package controller
 import (
 	"ki-d-assignment/common"
 	"ki-d-assignment/dto"
+	"ki-d-assignment/entity"
 
 	// "ki-d-assignment/entity"
 	"ki-d-assignment/service"
@@ -14,10 +15,11 @@ import (
 type UserController interface {
 	RegisterUser(ctx *gin.Context)
 	// GetAllUser(ctx *gin.Context)
-	// LoginUser(ctx *gin.Context)
+	LoginUser(ctx *gin.Context)
 	// DeleteUser(ctx *gin.Context)
 	// UpdateUser(ctx *gin.Context)
-	// MeUser(ctx *gin.Context)
+	MeUser(ctx *gin.Context)
+	MeUserDecrypted(ctx *gin.Context)
 }
 
 type userController struct {
@@ -71,37 +73,36 @@ func (uc *userController) RegisterUser(ctx *gin.Context) {
 // 	ctx.JSON(http.StatusOK, res)
 // }
 
-// func (uc *userController) LoginUser(ctx *gin.Context) {
-// 	var userLoginDTO dto.UserLoginDTO
-// 	err := ctx.ShouldBind(&userLoginDTO)
-// 	if err != nil {
-// 		res := common.BuildErrorResponse("Validation Error", err.Error(), common.EmptyObj{})
-// 		ctx.JSON(http.StatusBadRequest, res)
-// 		return
-// 	}
+func (uc *userController) LoginUser(ctx *gin.Context) {
+	var userLoginDTO dto.UserLoginDTO
+	err := ctx.ShouldBind(&userLoginDTO)
+	if err != nil {
+		res := common.BuildErrorResponse("Validation Error", err.Error(), common.EmptyObj{})
+		ctx.JSON(http.StatusBadRequest, res)
+		return
+	}
 
-// 	res, _ := uc.userService.Verify(ctx.Request.Context(), userLoginDTO.Email, userLoginDTO.Password)
-// 	if !res {
-// 		response := common.BuildErrorResponse("Gagal Login", "Email atau Password Salah", common.EmptyObj{})
-// 		ctx.AbortWithStatusJSON(http.StatusBadRequest, response)
-// 		return
-// 	}
+	res, _ := uc.userService.Verify(ctx.Request.Context(), userLoginDTO.Username, userLoginDTO.Password)
+	if !res {
+		response := common.BuildErrorResponse("Gagal Login", "Username atau Password Salah", common.EmptyObj{})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, response)
+		return
+	}
 
-// 	user, err := uc.userService.FindUserByEmail(ctx.Request.Context(), userLoginDTO.Email)
-// 	if err != nil {
-// 		response := common.BuildErrorResponse("Gagal Login", err.Error(), common.EmptyObj{})
-// 		ctx.AbortWithStatusJSON(http.StatusBadRequest, response)
-// 		return
-// 	}
-// 	token := uc.jwtService.GenerateToken(user.ID, user.Role)
-// 	userResponse := entity.Authorization{
-// 		Token: token,
-// 		Role:  user.Role,
-// 	}
+	user, err := uc.userService.FindUserByUsername(ctx.Request.Context(), userLoginDTO.Username)
+	if err != nil {
+		response := common.BuildErrorResponse("Gagal Login", err.Error(), common.EmptyObj{})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, response)
+		return
+	}
+	token := uc.jwtService.GenerateToken(user.ID)
+	userResponse := entity.Authorization{
+		Token: token,
+	}
 
-// 	response := common.BuildResponse(true, "Berhasil Login", userResponse)
-// 	ctx.JSON(http.StatusOK, response)
-// }
+	response := common.BuildResponse(true, "Berhasil Login", userResponse)
+	ctx.JSON(http.StatusOK, response)
+}
 
 // func (uc *userController) DeleteUser(ctx *gin.Context) {
 // 	token := ctx.MustGet("token").(string)
@@ -149,22 +150,42 @@ func (uc *userController) RegisterUser(ctx *gin.Context) {
 // 	ctx.JSON(http.StatusOK, res)
 // }
 
-// func (uc *userController) MeUser(ctx *gin.Context) {
-// 	token := ctx.MustGet("token").(string)
-// 	userID, err := uc.jwtService.GetUserIDByToken(token)
-// 	if err != nil {
-// 		response := common.BuildErrorResponse("Gagal Memproses Request", "Token Tidak Valid", nil)
-// 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, response)
-// 		return
-// 	}
+func (uc *userController) MeUser(ctx *gin.Context) {
+	token := ctx.MustGet("token").(string)
+	userID, err := uc.jwtService.GetUserIDByToken(token)
+	if err != nil {
+		response := common.BuildErrorResponse("Gagal Memproses Request", "Token Tidak Valid", nil)
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, response)
+		return
+	}
 
-// 	result, err := uc.userService.MeUser(ctx.Request.Context(), userID)
-// 	if err != nil {
-// 		res := common.BuildErrorResponse("Gagal Mendapatkan User", err.Error(), common.EmptyObj{})
-// 		ctx.JSON(http.StatusBadRequest, res)
-// 		return
-// 	}
+	result, err := uc.userService.MeUser(ctx.Request.Context(), userID)
+	if err != nil {
+		res := common.BuildErrorResponse("Gagal Mendapatkan User", err.Error(), common.EmptyObj{})
+		ctx.JSON(http.StatusBadRequest, res)
+		return
+	}
 
-// 	res := common.BuildResponse(true, "Berhasil Mendapatkan User", result)
-// 	ctx.JSON(http.StatusOK, res)
-// }
+	res := common.BuildResponse(true, "Berhasil Mendapatkan User", result)
+	ctx.JSON(http.StatusOK, res)
+}
+
+func (uc *userController) MeUserDecrypted(ctx *gin.Context) {
+	token := ctx.MustGet("token").(string)
+	userID, err := uc.jwtService.GetUserIDByToken(token)
+	if err != nil {
+		response := common.BuildErrorResponse("Gagal Memproses Request", "Token Tidak Valid", nil)
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, response)
+		return
+	}
+
+	result, err := uc.userService.MeUserDecrypted(ctx.Request.Context(), userID)
+	if err != nil {
+		res := common.BuildErrorResponse("Gagal Mendapatkan User", err.Error(), common.EmptyObj{})
+		ctx.JSON(http.StatusBadRequest, res)
+		return
+	}
+
+	res := common.BuildResponse(true, "Berhasil Mendapatkan User", result)
+	ctx.JSON(http.StatusOK, res)
+}

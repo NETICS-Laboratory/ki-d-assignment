@@ -31,20 +31,18 @@ type UserLoginDTO struct {
 	Password string `json:"password" form:"password" binding:"required"`
 }
 
+type UserRequestDecryptedDto struct {
+	ID       uuid.UUID `json:"id"`
+	Username string    `json:"username"`
+	Name     string    `json:"name"`
+	Email    string    `json:"email"`
+	NoTelp   string    `json:"no_telp"`
+	Address  string    `json:"address"`
+	ID_Card  string    `json:"id_card"`
+}
+
 type UserRequestDataDTO struct {
-	Username          string `json:"username" form:"username"`
-	EncyptedSecretKey string `json:"encrypted_secret_key"`
-}
-
-type UserSymmetricKeysResponseDTO struct {
-	SecretKey      string `json:"secret_key"`
-	SecretKey8Byte string `json:"secret_key_8_byte"`
-}
-
-type EncryptedRequestedUserSymmetricKeysDTO struct {
-	EncryptedSecretKey string `json:"encrypted_secret_key"`
-}
-
-type DecryptedRequestedUserSymmetricKeysDTO struct {
-	DecryptedSecretKey string `json:"decrypted_secret_key"`
+	Username       string `json:"username" form:"username"`
+	SecretKey      string `json:"encrypted_secret_key"`
+	SecretKey8Byte string `json:"encrypted_secret_key8byte"`
 }

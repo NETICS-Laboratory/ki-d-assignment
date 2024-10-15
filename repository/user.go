@@ -4,7 +4,7 @@ import (
 	"context"
 	"ki-d-assignment/entity"
 
-	// "github.com/google/uuid"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -12,7 +12,7 @@ type UserRepository interface {
 	RegisterUser(ctx context.Context, user entity.User) (entity.User, error)
 	// GetAllUser(ctx context.Context) ([]entity.User, error)
 	FindUserByUsername(ctx context.Context, username string) (entity.User, error)
-	// FindUserByID(ctx context.Context, userID uuid.UUID) (entity.User, error)
+	FindUserByID(ctx context.Context, userID uuid.UUID) (entity.User, error)
 	// DeleteUser(ctx context.Context, userID uuid.UUID) (error)
 	// UpdateUser(ctx context.Context, user entity.User) (error)
 }
@@ -53,14 +53,14 @@ func (db *userConnection) FindUserByUsername(ctx context.Context, username strin
 	return user, nil
 }
 
-// func(db *userConnection) FindUserByID(ctx context.Context, userID uuid.UUID) (entity.User, error) {
-// 	var user entity.User
-// 	ux := db.connection.Where("id = ?", userID).Take(&user)
-// 	if ux.Error != nil {
-// 		return user, ux.Error
-// 	}
-// 	return user, nil
-// }
+func (db *userConnection) FindUserByID(ctx context.Context, userID uuid.UUID) (entity.User, error) {
+	var user entity.User
+	ux := db.connection.Where("id = ?", userID).Take(&user)
+	if ux.Error != nil {
+		return user, ux.Error
+	}
+	return user, nil
+}
 
 // func(db *userConnection) DeleteUser(ctx context.Context, userID uuid.UUID) (error) {
 // 	uc := db.connection.Delete(&entity.User{}, &userID)
