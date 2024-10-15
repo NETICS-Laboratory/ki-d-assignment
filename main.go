@@ -29,12 +29,18 @@ func main() {
 		jwtService service.JWTService = service.NewJWTService()
 
 		userRepository repository.UserRepository = repository.NewUserRepository(db)
-		userService    service.UserService       = service.NewUserService(userRepository)
+		fileRepository repository.FileRepository = repository.NewFileRepository(db)
+
+		userService service.UserService = service.NewUserService(userRepository)
+		fileService service.FileService = service.NewFileService(fileRepository, userRepository)
+
 		userController controller.UserController = controller.NewUserController(userService, jwtService)
+		fileController controller.FileController = controller.NewFileController(fileService, userService, jwtService)
 	)
 
 	server := gin.Default()
 	routes.UserRoutes(server, userController, jwtService)
+	routes.FileRoutes(server, fileController, jwtService)
 
 	port := os.Getenv("PORT")
 	if port == "" {
