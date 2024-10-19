@@ -9,7 +9,9 @@ import (
 	"ki-d-assignment/service"
 	"net/http"
 	"os"
+	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"gorm.io/gorm"
@@ -39,6 +41,17 @@ func main() {
 	)
 
 	server := gin.Default()
+
+	// CORS middleware
+	server.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:3000"}, // Adjust this to your frontend's origin
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
+		AllowHeaders:     []string{"Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
+
 	routes.UserRoutes(server, userController, jwtService)
 	routes.FileRoutes(server, fileController, jwtService)
 
