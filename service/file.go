@@ -8,105 +8,120 @@ import (
 	"ki-d-assignment/entity"
 	"ki-d-assignment/helpers"
 	"ki-d-assignment/repository"
+	"ki-d-assignment/utils"
 
 	"github.com/google/uuid"
 )
 
 type FileService interface {
-	UploadFile(ctx context.Context, fileDTO dto.FileCreateDto) (entity.Files, error)
-	GetAllFiles(ctx context.Context) ([]entity.Files, error)
-	DecryptFile(filename string, encryptionMethod string) (string, error)
-	GetFile(ctx context.Context, fileID string) (entity.Files, error)
-	GetFileByUserID(ctx context.Context, userID string) ([]entity.Files, error)
+	UploadFile(ctx context.Context, fileDTO dto.FileCreateDto, userID uuid.UUID) (entity.Files, error)
+	GetUserFiles(ctx context.Context, userID uuid.UUID) ([]entity.Files, error)
+	GetUserFileDecryptedByID(ctx context.Context, fileID uuid.UUID, userID uuid.UUID) (dto.FileDecryptedResponse, error)
 }
 
 type fileService struct {
-	FileRepository repository.FileRepository
+	fileRepository repository.FileRepository
+	userRepository repository.UserRepository
 }
 
-func NewFileService(fileRepo repository.FileRepository) FileService {
+func NewFileService(fr repository.FileRepository, ur repository.UserRepository) FileService {
 	return &fileService{
-		FileRepository: fileRepo,
+		fileRepository: fr,
+		userRepository: ur,
 	}
 }
 
-func (f *fileService) UploadFile(ctx context.Context, fileDTO dto.FileCreateDto) (entity.Files, error) {
-	var file entity.Files
+func (fs *fileService) UploadFile(ctx context.Context, fileDTO dto.FileCreateDto, userID uuid.UUID) (entity.Files, error) {
 
-	file.ID = uuid.New()
-	file.Name = fileDTO.Name
-	file.Files_AES = fileDTO.Files.Filename
-	file.Files_RC4 = fileDTO.Files.Filename
-	file.Files_DEC = fileDTO.Files.Filename
-	file.UserID, _ = uuid.Parse(fileDTO.UserID)
-
-	// Check file type
-	if fileDTO.Files.Header.Get("Content-Type") != "application/pdf" && fileDTO.Files.Header.Get("Content-Type") != "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" && fileDTO.Files.Header.Get("Content-Type") != "application/vnd.openxmlformats-officedocument.wordprocessingml.document" && fileDTO.Files.Header.Get("Content-Type") != "image/jpeg" && fileDTO.Files.Header.Get("Content-Type") != "image/png" && fileDTO.Files.Header.Get("Content-Type") != "video/mp4" {
-		return entity.Files{}, errors.New("file type is not supported")
+	user, err := fs.userRepository.FindUserByID(ctx, userID)
+	if err != nil {
+		return entity.Files{}, fmt.Errorf("failed to retrieve user data: %v", err)
 	}
 
-	// Check file size
-	if fileDTO.Files.Size > 1000000 {
-		return entity.Files{}, errors.New("file size is too large")
+	file := entity.Files{
+		ID:     uuid.New(),
+		UserID: user.ID,
 	}
 
-	// Check file name
-	if fileDTO.Files.Filename == "" {
-		return entity.Files{}, errors.New("file name is not valid")
+	// Validate file type for files (can be PDF/DOC/XLS files, and video files)
+	fileType := fileDTO.File.Header.Get("Content-Type")
+	if fileType != "application/pdf" &&
+		fileType != "application/msword" &&
+		fileType != "application/vnd.openxmlformats-officedocument.wordprocessingml.document" && // Untuk .docx
+		fileType != "application/vnd.ms-excel" &&
+		fileType != "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" && // Untuk .xlsx
+		fileType != "video/mp4" && fileType != "image/jpeg" && fileType != "image/png" {
+		return entity.Files{}, errors.New("unsupported file type")
 	}
 
-	// Save the files to the uploads folder
-	fileName := fmt.Sprintf("%s/files/%s", file.UserID, file.ID)
-	if err := utils.UploadFileUtility(fileDTO.Files, fileName); err != nil {
-		return entity.Files{}, err
+	// Validate file name
+	if !utils.IsValidFileName(fileDTO.File.Filename) {
+		return entity.Files{}, errors.New("invalid file name")
 	}
+	// Upload and encrypt the file path
+	encryptedFilePath := fmt.Sprintf("uploads/%s/encrypted", user.Username)
 
-	result, err := f.FileRepository.UploadFile(ctx, file)
+	secretKey := user.SecretKey
+	secretKey8Byte := user.SecretKey8Byte
+
+	aesFile, rc4File, desFile, err := utils.UploadFile(fileDTO.File, encryptedFilePath, secretKey, secretKey8Byte)
+	if err != nil {
+		return entity.Files{}, fmt.Errorf("failed to upload and encrypt file: %v", err)
+	}
+	// Store the paths of the encrypted files in the entity
+
+	file.Files_AES = aesFile
+	file.Files_RC4 = rc4File
+	file.Files_DES = desFile
+
+	uploadedFile, err := fs.fileRepository.UploadFile(ctx, file)
 	if err != nil {
 		return entity.Files{}, err
 	}
-
-	return result, nil
+	return uploadedFile, nil
 }
 
-func (f *fileService) GetAllFiles(ctx context.Context) ([]entity.Files, error) {
-	result, err := f.FileRepository.GetAllFiles(ctx)
+func (fs *fileService) GetUserFiles(ctx context.Context, userID uuid.UUID) ([]entity.Files, error) {
+	files, err := fs.fileRepository.GetFilesByUserID(ctx, userID)
 	if err != nil {
-		return []entity.Files{}, err
+		return nil, err
 	}
-
-	return result, nil
+	return files, nil
 }
 
-func (f *fileService) DecryptFile(filename string, encryptionMethod string) (string, error) {
-
-	if encryptionMethod == "AES" {
-		return utils.DecryptAES(filename)
-	} else if encryptionMethod == "RC4" {
-		return utils.DecryptRC4(filename)
-	} else if encryptionMethod == "DES" {
-		return utils.DecryptDES(filename)
-	} else {
-		return "", errors.New("encryption method is not valid")
-	}
-}
-
-// Get File from repository
-func (f *fileService) GetFile(ctx context.Context, fileID string) (entity.Files, error) {
-	result, err := f.FileRepository.GetFile(ctx, fileID)
+func (fs *fileService) GetUserFileDecryptedByID(ctx context.Context, fileID uuid.UUID, userID uuid.UUID) (dto.FileDecryptedResponse, error) {
+	// 1. Find the user by ID to get the secret keys
+	file, err := fs.fileRepository.GetFileByIDAndUserID(ctx, fileID, userID)
 	if err != nil {
-		return entity.Files{}, err
+		return dto.FileDecryptedResponse{}, fmt.Errorf("file tidak ditemukan atau tidak memiliki akses: %v", err)
 	}
 
-	return result, nil
-}
-
-// Get File by User id
-func (f *fileService) GetFileByUserID(ctx context.Context, userID string) ([]entity.Files, error) {
-	result, err := f.FileRepository.GetFileByUserID(ctx, userID)
+	// 2. Find the specific file by ID
+	user, err := fs.userRepository.FindUserByID(ctx, userID)
 	if err != nil {
-		return []entity.Files{}, err
+		return dto.FileDecryptedResponse{}, fmt.Errorf("gagal menemukan pengguna: %v", err)
 	}
 
-	return result, nil
+	// 3. Get the file paths (AES, RC4, DES) from the file entity
+	decryptedAESPath, decryptedRC4Path, decryptedDESPath, err := helpers.DecryptDataReturnIndiviual(
+		file.Files_AES, file.Files_RC4, file.Files_DES, user.SecretKey, user.SecretKey8Byte)
+	if err != nil {
+		return dto.FileDecryptedResponse{}, fmt.Errorf("gagal melakukan dekripsi jalur file: %v", err)
+	}
+
+	// 4. Call the utility function to decrypt the files and save them in the "decrypted" folder
+	filePath := fmt.Sprintf("uploads/%s", user.Username)
+	err = utils.DecryptAndSaveFiles(filePath, decryptedAESPath, decryptedRC4Path, decryptedDESPath, user.SecretKey, user.SecretKey8Byte)
+	if err != nil {
+		return dto.FileDecryptedResponse{}, fmt.Errorf("gagal melakukan dekripsi file dan menyimpannya: %v", err)
+	}
+
+	decryptedResponse := dto.FileDecryptedResponse{
+		ID:            file.ID,
+		Decrypted_AES: decryptedAESPath,
+		Decrypted_RC4: decryptedRC4Path,
+		Decrypted_DES: decryptedDESPath,
+	}
+
+	return decryptedResponse, nil
 }
