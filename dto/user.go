@@ -41,6 +41,17 @@ type UserRequestDecryptedDto struct {
 	ID_Card  string    `json:"id_card"`
 }
 
+type AccessRequestCreateDto struct {
+	AllowedUsername string `json:"allowed_username" binding:"required"`
+}
+
+type AccessRequestResponseDto struct {
+	ID            uuid.UUID `json:"id"`
+	UserID        uuid.UUID `json:"user_id"`
+	AllowedUserID uuid.UUID `json:"allowed_user_id"`
+	Status        string    `json:"status"`
+}
+
 // type UserRequestDataDTO struct {
 // 	Username       string `json:"username" form:"username"`
 // 	SecretKey      string `json:"encrypted_secret_key"`
