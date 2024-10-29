@@ -26,6 +26,9 @@ type UserService interface {
 	MeUser(ctx context.Context, userID uuid.UUID) (entity.User, error)
 	MeUserDecrypted(ctx context.Context, userID uuid.UUID) (dto.UserRequestDecryptedDto, error)
 	DecryptUserIDCard(ctx context.Context, userID uuid.UUID) error
+	RequestAccess(ctx context.Context, userID, allowedUserID uuid.UUID) (entity.AccessRequest, error)
+	GetAccessRequests(ctx context.Context, userID uuid.UUID) ([]entity.AccessRequest, error)
+	UpdateAccessRequestStatus(ctx context.Context, requestID uuid.UUID, status string) error
 }
 
 type userService struct {
@@ -278,4 +281,21 @@ func (us *userService) DecryptUserIDCard(ctx context.Context, userID uuid.UUID) 
 	}
 
 	return nil
+}
+
+func (us *userService) RequestAccess(ctx context.Context, userID, allowedUserID uuid.UUID) (entity.AccessRequest, error) {
+	request := entity.AccessRequest{
+		UserID:        userID,
+		AllowedUserID: allowedUserID,
+		Status:        "pending",
+	}
+	return us.userRepository.CreateAccessRequest(ctx, request)
+}
+
+func (us *userService) GetAccessRequests(ctx context.Context, userID uuid.UUID) ([]entity.AccessRequest, error) {
+	return us.userRepository.GetAccessRequestsByUserID(ctx, userID)
+}
+
+func (us *userService) UpdateAccessRequestStatus(ctx context.Context, requestID uuid.UUID, status string) error {
+	return us.userRepository.UpdateAccessRequestStatus(ctx, requestID, status)
 }

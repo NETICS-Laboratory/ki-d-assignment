@@ -21,6 +21,7 @@ type UserController interface {
 	MeUser(ctx *gin.Context)
 	MeUserDecrypted(ctx *gin.Context)
 	DecryptUserIDCard(ctx *gin.Context)
+	RequestAccess(ctx *gin.Context)
 }
 
 type userController struct {
@@ -208,5 +209,51 @@ func (uc *userController) DecryptUserIDCard(ctx *gin.Context) {
 	}
 
 	res := common.BuildResponse(true, "Berhasil Melakukan Dekripsi File", true)
+	ctx.JSON(http.StatusOK, res)
+}
+
+func (uc *userController) RequestAccess(ctx *gin.Context) {
+	var requestData dto.AccessRequestCreateDto
+	if err := ctx.ShouldBindJSON(&requestData); err != nil {
+		res := common.BuildErrorResponse("Validation Error", err.Error(), common.EmptyObj{})
+		ctx.JSON(http.StatusBadRequest, res)
+		return
+	}
+
+	token := ctx.MustGet("token").(string)
+	userID, err := uc.jwtService.GetUserIDByToken(token)
+	if err != nil {
+		response := common.BuildErrorResponse("Invalid Request", "Token Invalid", nil)
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, response)
+		return
+	}
+
+	allowedUser, err := uc.userService.FindUserByUsername(ctx.Request.Context(), requestData.AllowedUsername)
+	if err != nil {
+		response := common.BuildErrorResponse("User Not Found", "Allowed user not found", nil)
+		ctx.JSON(http.StatusNotFound, response)
+		return
+	}
+
+	if userID == allowedUser.ID {
+		response := common.BuildErrorResponse("Invalid Request", "You cannot request access to your own data", nil)
+		ctx.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	request, err := uc.userService.RequestAccess(ctx.Request.Context(), userID, allowedUser.ID)
+	if err != nil {
+		response := common.BuildErrorResponse("Failed to Request Access", err.Error(), nil)
+		ctx.JSON(http.StatusInternalServerError, response)
+		return
+	}
+
+	responseData := dto.AccessRequestResponseDto{
+		ID:            request.ID,
+		UserID:        request.UserID,
+		AllowedUserID: request.AllowedUserID,
+		Status:        request.Status,
+	}
+	res := common.BuildResponse(true, "Access Request Created", responseData)
 	ctx.JSON(http.StatusOK, res)
 }
