@@ -120,6 +120,11 @@ func (us *userService) RegisterUser(ctx context.Context, userDTO dto.UserCreateD
 
 	// fmt.Printf("%v\n%v\n%v", user.ID_Card_AES, user.ID_Card_RC4, user.ID_Card_DES)
 
+	// Generate asymmetric keys for the user
+	if err := utils.GenerateAsymmetricKeys(user.ID); err != nil {
+		return entity.User{}, err
+	}
+
 	return us.userRepository.RegisterUser(ctx, user)
 }
 
