@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"ki-d-assignment/dto"
@@ -17,6 +18,7 @@ type FileService interface {
 	UploadFile(ctx context.Context, fileDTO dto.FileCreateDto, userID uuid.UUID) (entity.Files, error)
 	GetUserFiles(ctx context.Context, userID uuid.UUID) ([]entity.Files, error)
 	GetUserFileDecryptedByID(ctx context.Context, fileID uuid.UUID, userID uuid.UUID) (dto.FileDecryptedResponse, error)
+	GetRequestedUserFile(ctx context.Context, userID uuid.UUID, requestedUser entity.User, secretKeys string, secretKeys8Byte string) ([]dto.FileDecryptedResponse, error)
 }
 
 type fileService struct {
@@ -28,13 +30,14 @@ func NewFileService(fr repository.FileRepository, ur repository.UserRepository) 
 	return &fileService{
 		fileRepository: fr,
 		userRepository: ur,
+		
 	}
 }
 
 func (fs *fileService) UploadFile(ctx context.Context, fileDTO dto.FileCreateDto, userID uuid.UUID) (entity.Files, error) {
 
 	user, err := fs.userRepository.FindUserByID(ctx, userID)
-	if err != nil {
+	if (err != nil) {
 		return entity.Files{}, fmt.Errorf("failed to retrieve user data: %v", err)
 	}
 
@@ -125,3 +128,81 @@ func (fs *fileService) GetUserFileDecryptedByID(ctx context.Context, fileID uuid
 
 	return decryptedResponse, nil
 }
+
+func (fs *fileService) GetRequestedUserFile(ctx context.Context, userID uuid.UUID, requestedUser entity.User, secretKeys string, secretKeys8Byte string) ([]dto.FileDecryptedResponse, error) {
+	// Retrieve files for the requested user
+	files, err := fs.fileRepository.GetFilesByUserID(ctx, requestedUser.ID)
+	if err != nil {
+		return nil, fmt.Errorf("file tidak ditemukan atau tidak memiliki akses: %v", err)
+	}
+
+	// Fetch the user who requested access
+	user, err := fs.userRepository.FindUserByID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("gagal menemukan pengguna: %v", err)
+	}
+
+	// Decode the hex-encoded secret keys
+	decodedSecretKey, err := hex.DecodeString(secretKeys)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode secret key: %v", err)
+	}
+
+	decodedSecretKey8Byte, err := hex.DecodeString(secretKeys8Byte)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode 8-byte secret key: %v", err)
+	}
+
+	// Validate key lengths
+	if len(decodedSecretKey) != 32 { // Assuming AES-256 and RC4-256
+		return nil, fmt.Errorf("invalid AES/RC4 key length: expected 32 bytes, got %d bytes", len(decodedSecretKey))
+	}
+
+	if len(decodedSecretKey8Byte) != 8 { // DES requires 8-byte key
+		return nil, fmt.Errorf("invalid DES key length: expected 8 bytes, got %d bytes", len(decodedSecretKey8Byte))
+	}
+
+	// Define the file path for saving decrypted files
+	filePath := fmt.Sprintf("uploads/%s", user.Username)
+
+	// Array to hold decrypted responses
+	var decryptedResponses []dto.FileDecryptedResponse
+
+	// Decrypt each file and build the response
+	for _, file := range files {
+		// Decrypt AES file content
+		decryptedAES, err := utils.DecryptFileBytesAES([]byte(file.Files_AES), decodedSecretKey)
+		if err != nil {
+			return nil, fmt.Errorf("gagal melakukan dekripsi AES: %v", err)
+		}
+
+		// Decrypt RC4 file content
+		decryptedRC4, err := utils.DecryptFileBytesRC4([]byte(file.Files_RC4), decodedSecretKey)
+		if err != nil {
+			return nil, fmt.Errorf("gagal melakukan dekripsi RC4: %v", err)
+		}
+
+		// Decrypt DES file content
+		decryptedDES, err := utils.DecryptFileBytesDES([]byte(file.Files_DES), decodedSecretKey8Byte)
+		if err != nil {
+			return nil, fmt.Errorf("gagal melakukan dekripsi DES: %v", err)
+		}
+
+		// Save decrypted files to disk
+		err = utils.DecryptAndSaveFiles(filePath, string(decryptedAES), string(decryptedRC4), string(decryptedDES), decodedSecretKey, decodedSecretKey8Byte)
+		if err != nil {
+			return nil, fmt.Errorf("gagal menyimpan file yang telah didekripsi: %v", err)
+		}
+
+		// Append decrypted paths to the response array
+		decryptedResponses = append(decryptedResponses, dto.FileDecryptedResponse{
+			ID:            file.ID,
+			Decrypted_AES: string(decryptedAES),
+			Decrypted_RC4: string(decryptedRC4),
+			Decrypted_DES: string(decryptedDES),
+		})
+	}
+
+	return decryptedResponses, nil
+}
+

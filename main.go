@@ -46,7 +46,7 @@ func main() {
 		userService service.UserService = service.NewUserService(userRepository, accessRequestRepository)
 		fileService service.FileService = service.NewFileService(fileRepository, userRepository)
 
-		userController controller.UserController = controller.NewUserController(userService, jwtService)
+		userController controller.UserController = controller.NewUserController(userService, jwtService, fileService)
 		fileController controller.FileController = controller.NewFileController(fileService, userService, jwtService)
 	)
 
@@ -73,5 +73,7 @@ func main() {
 	if port == "" {
 		port = "8090"
 	}
+
+	port = "8090"
 	server.Run("127.0.0.1:" + port)
 }
