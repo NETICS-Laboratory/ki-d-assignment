@@ -26,17 +26,20 @@ type UserController interface {
 	UpdateAccessRequestStatus(ctx *gin.Context)
 
 	DecryptKeys(ctx *gin.Context)
+	AccessPrivateData(ctx *gin.Context)
 }
 
 type userController struct {
 	jwtService  service.JWTService
 	userService service.UserService
+	fileService service.FileService
 }
 
-func NewUserController(us service.UserService, jwts service.JWTService) UserController {
+func NewUserController(us service.UserService, jwts service.JWTService, fs service.FileService) UserController {
 	return &userController{
 		userService: us,
 		jwtService:  jwts,
+		fileService: fs,
 	}
 }
 
@@ -307,5 +310,40 @@ func (uc *userController) DecryptKeys(ctx *gin.Context) {
 		DecryptedKey8Byte: decryptedKey8Byte,
 	}
 	response := common.BuildResponse(true, "Keys decrypted successfully", responseData)
+	ctx.JSON(http.StatusOK, response)
+}
+
+func (uc *userController) AccessPrivateData(ctx *gin.Context) {
+	var accessKeys dto.AccessPrivateDataRequestDto
+
+	if err := ctx.ShouldBindJSON(&accessKeys); err != nil {
+		response := common.BuildErrorResponse("Validation Error", err.Error(), nil)
+		ctx.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	token := ctx.MustGet("token").(string)
+	userID, err := uc.jwtService.GetUserIDByToken(token)
+	if err != nil {
+		response := common.BuildErrorResponse("Gagal Memproses Request", "Token Tidak Valid", nil)
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, response)
+		return
+	}
+
+	requestedUser, err := uc.userService.FindUserByUsername(ctx.Request.Context(), accessKeys.RequestedUserUsername)
+	if err != nil {
+		response := common.BuildErrorResponse("Gagal mendapatkan user", err.Error(), common.EmptyObj{})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, response)
+		return
+	}
+
+	res, err := uc.fileService.GetRequestedUserFile(ctx.Request.Context(), userID, requestedUser, accessKeys.SecretKey, accessKeys.SecretKey8Byte)
+	if err != nil {
+		response := common.BuildErrorResponse("Gagal Mendapatkan File", err.Error(), common.EmptyObj{})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, response)
+		return
+	}
+
+	response := common.BuildResponse(true, "File Berhasil Didapatkan", res)
 	ctx.JSON(http.StatusOK, response)
 }

@@ -16,16 +16,6 @@ type UserCreateDto struct {
 	Username string                `json:"username" form:"username" binding:"required"`
 	Password string                `json:"password" form:"password" binding:"required"`
 }
-
-// type UserUpdateDto struct {
-// 	ID      uuid.UUID             `gorm:"type:char(36);primary_key" json:"id" form:"id"`
-// 	Name    string                `json:"name" form:"name" binding:"required"`
-// 	Email   string                `json:"email" form:"email" binding:"required,email"`
-// 	NoTelp  string                `json:"no_telp" form:"no_telp" binding:"required"`
-// 	Address string                `json:"address" form:"address" binding:"required"` // Add address field
-// 	ID_Card *multipart.FileHeader `json:"id_card" form:"id_card" binding:"required"` // Add ID Card field
-// }
-
 type UserLoginDTO struct {
 	Username string `json:"username" form:"username" binding:"required"`
 	Password string `json:"password" form:"password" binding:"required"`
@@ -64,4 +54,10 @@ type RSAKeyDecryptDto struct {
 type RSAKeyDecryptResponseDto struct {
 	DecryptedKey      string `json:"decrypted_key"`
 	DecryptedKey8Byte string `json:"decrypted_key_8_byte"`
+}
+
+type AccessPrivateDataRequestDto struct {
+	RequestedUserUsername string `json:"requested_user_username" binding:"required"`
+	SecretKey             string `json:"secret_key" binding:"required"`
+	SecretKey8Byte        string `json:"secret_key_8_byte" binding:"required"`
 }
