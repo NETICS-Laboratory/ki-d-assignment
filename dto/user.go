@@ -42,33 +42,16 @@ type UserRequestDecryptedDto struct {
 }
 
 type AccessRequestCreateDto struct {
-	AllowedUsername string `json:"allowed_username" binding:"required"`
+	RequestedUsername string `json:"requested_username" binding:"required"`
 }
 
 type AccessRequestResponseDto struct {
-	ID            uuid.UUID `json:"id"`
-	UserID        uuid.UUID `json:"user_id"`
-	AllowedUserID uuid.UUID `json:"allowed_user_id"`
-	Status        string    `json:"status"`
+	ID              uuid.UUID `json:"id"`
+	UserID          uuid.UUID `json:"user_id"`
+	RequestedUserID uuid.UUID `json:"requested_user_id"`
+	Status          string    `json:"status"`
 }
 
-// type UserRequestDataDTO struct {
-// 	Username       string `json:"username" form:"username"`
-// 	SecretKey      string `json:"encrypted_secret_key"`
-// 	SecretKey8Byte string `json:"encrypted_secret_key8byte"`
-// }
-
-type UserSymmetricKeysDTO struct {
-	SecretKey      string `json:"secret_key"`
-	SecretKey8Byte string `json:"secret_key_8_byte"`
-}
-
-type EncryptedUserSymmetricKeysDTO struct {
-	EncryptedSecretKey 		string `json:"encrypted_secret_key"`
-	EncryptedSecretKey8Byte string `json:"encrypted_secret_key_8_byte"`
-}
-
-type DecryptedUserSymmetricKeysDTO struct {
-	DecryptedSecretKey 		string `json:"decrypted_secret_key"`
-	DecryptedSecretKey8Byte string `json:"decrypted_secret_key_8_byte"`
+type AccessRequestChangeStatusDto struct {
+	Status string `json:"status" form:"status" binding:"required" validate:"oneof=pending approved denied"`
 }

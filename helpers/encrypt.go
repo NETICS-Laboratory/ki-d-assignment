@@ -1,6 +1,8 @@
 package helpers
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
 	"fmt"
 	"ki-d-assignment/utils"
 	"time"
@@ -45,4 +47,8 @@ func EncryptData(data string, secretKey []byte, secretKey8Byte []byte) (string, 
 	fmt.Printf("RC4 Ciphertext Length: %d\n\n", len(encRC4))
 
 	return encAES, encDES, encRC4, nil
+}
+
+func EncryptWithPublicKey(data []byte, pub *rsa.PublicKey) ([]byte, error) {
+	return rsa.EncryptPKCS1v15(rand.Reader, pub, data)
 }

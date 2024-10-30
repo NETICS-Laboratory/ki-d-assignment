@@ -10,6 +10,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 )
 
 type UserController interface {
@@ -22,6 +24,8 @@ type UserController interface {
 	MeUserDecrypted(ctx *gin.Context)
 	DecryptUserIDCard(ctx *gin.Context)
 	RequestAccess(ctx *gin.Context)
+	GetAccessRequests(ctx *gin.Context)
+	UpdateAccessRequestStatus(ctx *gin.Context)
 }
 
 type userController struct {
@@ -155,6 +159,14 @@ func (uc *userController) DecryptUserIDCard(ctx *gin.Context) {
 }
 
 func (uc *userController) RequestAccess(ctx *gin.Context) {
+	token := ctx.MustGet("token").(string)
+	userID, err := uc.jwtService.GetUserIDByToken(token)
+	if err != nil {
+		response := common.BuildErrorResponse("Gagal Memproses Request", "Token Tidak Valid", nil)
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, response)
+		return
+	}
+
 	var requestData dto.AccessRequestCreateDto
 	if err := ctx.ShouldBindJSON(&requestData); err != nil {
 		res := common.BuildErrorResponse("Validation Error", err.Error(), common.EmptyObj{})
@@ -162,51 +174,106 @@ func (uc *userController) RequestAccess(ctx *gin.Context) {
 		return
 	}
 
-	token := ctx.MustGet("token").(string)
-	userID, err := uc.jwtService.GetUserIDByToken(token)
+	requestedUser, err := uc.userService.FindUserByUsername(ctx.Request.Context(), requestData.RequestedUsername)
 	if err != nil {
-		response := common.BuildErrorResponse("Invalid Request", "Token Invalid", nil)
-		ctx.AbortWithStatusJSON(http.StatusUnauthorized, response)
-		return
-	}
-
-	allowedUser, err := uc.userService.FindUserByUsername(ctx.Request.Context(), requestData.AllowedUsername)
-	if err != nil {
-		response := common.BuildErrorResponse("User Not Found", "Allowed user not found", nil)
+		response := common.BuildErrorResponse("User Tidak Ditemukan", "User Yang Diminta Aksesnya Tidak Ditemukan.", nil)
 		ctx.JSON(http.StatusNotFound, response)
 		return
 	}
 
-	if userID == allowedUser.ID {
-		response := common.BuildErrorResponse("Invalid Request", "You cannot request access to your own data", nil)
+	if userID == requestedUser.ID {
+		response := common.BuildErrorResponse("Gagal Memproses Request", "Anda Tidak Dapat Merequest File Anda Sendiri", nil)
 		ctx.JSON(http.StatusBadRequest, response)
 		return
 	}
 
-	request, err := uc.userService.RequestAccess(ctx.Request.Context(), userID, allowedUser.ID)
+	request, err := uc.userService.RequestAccess(ctx.Request.Context(), userID, requestedUser.ID)
 	if err != nil {
-		response := common.BuildErrorResponse("Failed to Request Access", err.Error(), nil)
-		ctx.JSON(http.StatusInternalServerError, response)
+		response := common.BuildErrorResponse("Gagal Membuat Akses Request", err.Error(), nil)
+		ctx.JSON(http.StatusBadRequest, response)
 		return
 	}
 
 	responseData := dto.AccessRequestResponseDto{
-		ID:            request.ID,
-		UserID:        request.UserID,
-		AllowedUserID: request.AllowedUserID,
-		Status:        request.Status,
+		ID:              request.ID,
+		UserID:          request.UserID,
+		RequestedUserID: request.RequestedUserID,
+		Status:          request.Status,
 	}
-	res := common.BuildResponse(true, "Access Request Created", responseData)
+	res := common.BuildResponse(true, "Akses Request Berhasil Dibuat", responseData)
 	ctx.JSON(http.StatusOK, res)
 }
 
-func (uc *userController) GetUserSymmetricKey(ctx *gin.Context) {
+func (uc *userController) GetAccessRequests(ctx *gin.Context) {
 	token := ctx.MustGet("token").(string)
 	userID, err := uc.jwtService.GetUserIDByToken(token)
 	if err != nil {
-		response := common.BuildErrorResponse("Invalid Request", "Token Invalid", nil)
+		response := common.BuildErrorResponse("Gagal Memproses Request", "Token Tidak Valid", nil)
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, response)
 		return
 	}
-	
+
+	requestType := ctx.Query("type")
+	var result []entity.AccessRequest
+
+	if requestType == "received" {
+		result, err = uc.userService.GetReceivedAccessRequests(ctx.Request.Context(), userID)
+	} else {
+		result, err = uc.userService.GetSentAccessRequests(ctx.Request.Context(), userID)
+	}
+
+	if err != nil {
+		res := common.BuildErrorResponse("Gagal Mendapatkan Akses Request", err.Error(), common.EmptyObj{})
+		ctx.JSON(http.StatusBadRequest, res)
+		return
+	}
+
+	if len(result) == 0 {
+		res := common.BuildResponse(true, "Tidak Ada Access Request", []entity.AccessRequest{})
+		ctx.JSON(http.StatusOK, res)
+		return
+	}
+
+	res := common.BuildResponse(true, "Berhasil Mendapatkan Akses Request", result)
+	ctx.JSON(http.StatusOK, res)
+}
+
+func (uc *userController) UpdateAccessRequestStatus(ctx *gin.Context) {
+	token := ctx.MustGet("token").(string)
+	userID, err := uc.jwtService.GetUserIDByToken(token)
+	if err != nil {
+		response := common.BuildErrorResponse("Gagal Memproses Request", "Token Tidak Valid", nil)
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, response)
+		return
+	}
+
+	requestID, err := uuid.Parse(ctx.Param("request_id"))
+	if err != nil {
+		response := common.BuildErrorResponse("Invalid Request ID", "Request ID Tidak Valid", nil)
+		ctx.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	var statusDto dto.AccessRequestChangeStatusDto
+	if err := ctx.ShouldBindJSON(&statusDto); err != nil {
+		response := common.BuildErrorResponse("Validation Error", err.Error(), nil)
+		ctx.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	if err := validator.New().Struct(&statusDto); err != nil {
+		response := common.BuildErrorResponse("Validation Error", "Status must be one of: pending, approved, denied", nil)
+		ctx.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	err = uc.userService.UpdateAccessRequestStatus(ctx.Request.Context(), userID, requestID, statusDto.Status)
+	if err != nil {
+		response := common.BuildErrorResponse("Gagal Mengupdate Access Request Status", err.Error(), nil)
+		ctx.JSON(http.StatusInternalServerError, response)
+		return
+	}
+
+	response := common.BuildResponse(true, "Access Request Status Berhasil Diupdate", nil)
+	ctx.JSON(http.StatusOK, response)
 }

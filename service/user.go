@@ -1,16 +1,22 @@
 package service
 
 import (
+	"bytes"
 	"context"
+	"crypto/x509"
+	"encoding/pem"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"ki-d-assignment/dto"
 	"ki-d-assignment/entity"
 	"ki-d-assignment/helpers"
 	"ki-d-assignment/repository"
 	"ki-d-assignment/utils"
+	"os"
 	"path/filepath"
 	"strings"
+	"text/template"
 
 	"github.com/google/uuid"
 )
@@ -26,18 +32,22 @@ type UserService interface {
 	MeUser(ctx context.Context, userID uuid.UUID) (entity.User, error)
 	MeUserDecrypted(ctx context.Context, userID uuid.UUID) (dto.UserRequestDecryptedDto, error)
 	DecryptUserIDCard(ctx context.Context, userID uuid.UUID) error
-	RequestAccess(ctx context.Context, userID, allowedUserID uuid.UUID) (entity.AccessRequest, error)
-	GetAccessRequests(ctx context.Context, userID uuid.UUID) ([]entity.AccessRequest, error)
-	UpdateAccessRequestStatus(ctx context.Context, requestID uuid.UUID, status string) error
+
+	RequestAccess(ctx context.Context, userID, requestedUserID uuid.UUID) (entity.AccessRequest, error)
+	GetSentAccessRequests(ctx context.Context, userID uuid.UUID) ([]entity.AccessRequest, error)
+	GetReceivedAccessRequests(ctx context.Context, userID uuid.UUID) ([]entity.AccessRequest, error)
+	UpdateAccessRequestStatus(ctx context.Context, userID, requestID uuid.UUID, status string) error
 }
 
 type userService struct {
-	userRepository repository.UserRepository
+	userRepository          repository.UserRepository
+	accessRequestRepository repository.AccessRequestRepository
 }
 
-func NewUserService(ur repository.UserRepository) UserService {
+func NewUserService(ur repository.UserRepository, arr repository.AccessRequestRepository) UserService {
 	return &userService{
-		userRepository: ur,
+		userRepository:          ur,
+		accessRequestRepository: arr,
 	}
 }
 
@@ -124,6 +134,9 @@ func (us *userService) RegisterUser(ctx context.Context, userDTO dto.UserCreateD
 	user.ID_Card_DES = desFile
 
 	// fmt.Printf("%v\n%v\n%v", user.ID_Card_AES, user.ID_Card_RC4, user.ID_Card_DES)
+	if err := utils.GenerateAsymmetricKeys(user.Username); err != nil {
+		return entity.User{}, fmt.Errorf("gagal membuat RSA key pair: %v", err)
+	}
 
 	return us.userRepository.RegisterUser(ctx, user)
 }
@@ -257,19 +270,141 @@ func (us *userService) DecryptUserIDCard(ctx context.Context, userID uuid.UUID) 
 	return nil
 }
 
-func (us *userService) RequestAccess(ctx context.Context, userID, allowedUserID uuid.UUID) (entity.AccessRequest, error) {
-	request := entity.AccessRequest{
-		UserID:        userID,
-		AllowedUserID: allowedUserID,
-		Status:        "pending",
+func (us *userService) RequestAccess(ctx context.Context, userID, requestedUserID uuid.UUID) (entity.AccessRequest, error) {
+	exists, err := us.accessRequestRepository.CheckExistingAccessRequest(ctx, userID, requestedUserID)
+	if err != nil {
+		return entity.AccessRequest{}, err
 	}
-	return us.userRepository.CreateAccessRequest(ctx, request)
+	if exists {
+		return entity.AccessRequest{}, errors.New("Akses Request Ke User Tersebut Sudah Ada")
+	}
+
+	request := entity.AccessRequest{
+		UserID:          userID,
+		RequestedUserID: requestedUserID,
+		Status:          "pending",
+	}
+	return us.accessRequestRepository.CreateAccessRequest(ctx, request)
 }
 
-func (us *userService) GetAccessRequests(ctx context.Context, userID uuid.UUID) ([]entity.AccessRequest, error) {
-	return us.userRepository.GetAccessRequestsByUserID(ctx, userID)
+func (us *userService) GetSentAccessRequests(ctx context.Context, userID uuid.UUID) ([]entity.AccessRequest, error) {
+	return us.accessRequestRepository.GetAccessRequestsByUserID(ctx, userID)
 }
 
-func (us *userService) UpdateAccessRequestStatus(ctx context.Context, requestID uuid.UUID, status string) error {
-	return us.userRepository.UpdateAccessRequestStatus(ctx, requestID, status)
+func (us *userService) GetReceivedAccessRequests(ctx context.Context, userID uuid.UUID) ([]entity.AccessRequest, error) {
+	return us.accessRequestRepository.GetAccessRequestsByRequestedUserID(ctx, userID)
+}
+
+func (us *userService) UpdateAccessRequestStatus(ctx context.Context, userID, requestID uuid.UUID, status string) error {
+	res, err := us.accessRequestRepository.GetAccessRequestsByID(ctx, requestID)
+	if err != nil {
+		return err
+	}
+
+	if res.RequestedUserID != userID {
+		return fmt.Errorf("Anda tidak memiliki izin untuk mengubah status permintaan ini")
+	}
+
+	if err := us.accessRequestRepository.UpdateAccessRequestStatus(ctx, requestID, status); err != nil {
+		return err
+	}
+
+	if status == "approved" {
+		// Ambil requesting user ID dari requestnya
+		requestingUser, err := us.userRepository.FindUserByID(ctx, res.UserID)
+		if err != nil {
+			return err
+		}
+
+		// Ambil public key si requesting user
+		publicKeyPath := filepath.Join("uploads", requestingUser.Username, "secret", "public_key.pem")
+		publicKeyFile, err := os.ReadFile(publicKeyPath)
+		if err != nil {
+			return err
+		}
+
+		block, _ := pem.Decode(publicKeyFile)
+		if block == nil || block.Type != "RSA PUBLIC KEY" {
+			return errors.New("failed to decode public key")
+		}
+
+		publicKey, err := x509.ParsePKCS1PublicKey(block.Bytes)
+		if err != nil {
+			return err
+		}
+
+		// Encrypt secret key requested user with User A's public key
+
+		requestedUser, err := us.userRepository.FindUserByID(ctx, userID)
+		if err != nil {
+			return err
+		}
+
+		encryptedSecretKey, err := helpers.EncryptWithPublicKey(requestedUser.SecretKey, publicKey)
+		if err != nil {
+			return err
+		}
+
+		encryptedSecretKey8Byte, err := helpers.EncryptWithPublicKey(requestedUser.SecretKey8Byte, publicKey)
+		if err != nil {
+			return err
+		}
+
+		decryptedRequestingUserEmail, err := helpers.DecryptData(requestingUser.Email_AES, requestingUser.Email_RC4, requestingUser.Email_DES, requestingUser.SecretKey, requestingUser.SecretKey8Byte)
+		if err != nil {
+			return fmt.Errorf("failed to decrypt requesting user's email: %v", err)
+		}
+
+		emailBody, err := buildKeyAccessEmail(
+			requestingUser.Username,
+			requestedUser.Username,
+			fmt.Sprintf("%x", encryptedSecretKey),
+			fmt.Sprintf("%x", encryptedSecretKey8Byte),
+		)
+		if err != nil {
+			return fmt.Errorf("failed to build email body: %v", err)
+		}
+
+		if err := helpers.SendMail(decryptedRequestingUserEmail, "Access Approved", emailBody); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func buildKeyAccessEmail(username, requestedUsername, encryptedSecretKey, encryptedSecretKey8Byte string) (string, error) {
+	// Load the HTML template
+	htmlFilePath := "helpers/email-template/access-approved.html"
+	htmlTemplate, err := ioutil.ReadFile(htmlFilePath)
+	if err != nil {
+		return "", err
+	}
+
+	// Parse the HTML template with placeholders
+	tmpl, err := template.New("email").Parse(string(htmlTemplate))
+	if err != nil {
+		return "", err
+	}
+
+	// Data to inject into the template
+	data := struct {
+		Username                string
+		RequestedUsername       string
+		EncryptedSecretKey      string
+		EncryptedSecretKey8Byte string
+	}{
+		Username:                username,
+		RequestedUsername:       requestedUsername,
+		EncryptedSecretKey:      encryptedSecretKey,
+		EncryptedSecretKey8Byte: encryptedSecretKey8Byte,
+	}
+
+	// Execute the template with the data
+	var body bytes.Buffer
+	if err := tmpl.Execute(&body, data); err != nil {
+		return "", err
+	}
+
+	return body.String(), nil
 }

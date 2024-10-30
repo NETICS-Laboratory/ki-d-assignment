@@ -1,12 +1,16 @@
 package main
 
 import (
+	"ki-d-assignment/cmd"
 	"ki-d-assignment/common"
 	"ki-d-assignment/config"
 	"ki-d-assignment/controller"
+	"ki-d-assignment/database"
 	"ki-d-assignment/repository"
 	"ki-d-assignment/routes"
 	"ki-d-assignment/service"
+	"ki-d-assignment/utils"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -14,7 +18,6 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-	"gorm.io/gorm"
 )
 
 func main() {
@@ -25,20 +28,31 @@ func main() {
 		return
 	}
 
-	var (
-		db *gorm.DB = config.SetupDatabaseConnection()
+	db := config.SetupDatabaseConnection()
+	defer config.CloseDatabaseConnection(db)
 
+	if len(os.Args) > 1 {
+		cmd.Commands(db)
+		return
+	}
+
+	var (
 		jwtService service.JWTService = service.NewJWTService()
 
-		userRepository repository.UserRepository = repository.NewUserRepository(db)
-		fileRepository repository.FileRepository = repository.NewFileRepository(db)
+		userRepository          repository.UserRepository          = repository.NewUserRepository(db)
+		fileRepository          repository.FileRepository          = repository.NewFileRepository(db)
+		accessRequestRepository repository.AccessRequestRepository = repository.NewAccessRequestRepository(db)
 
-		userService service.UserService = service.NewUserService(userRepository)
+		userService service.UserService = service.NewUserService(userRepository, accessRequestRepository)
 		fileService service.FileService = service.NewFileService(fileRepository, userRepository)
 
 		userController controller.UserController = controller.NewUserController(userService, jwtService)
 		fileController controller.FileController = controller.NewFileController(fileService, userService, jwtService)
 	)
+
+	if err := database.Migrate(db); err != nil {
+		log.Fatalf("Error migrating database: %v", err)
+	}
 
 	server := gin.Default()
 
@@ -55,7 +69,7 @@ func main() {
 	routes.UserRoutes(server, userController, jwtService)
 	routes.FileRoutes(server, fileController, jwtService)
 
-	port := os.Getenv("PORT")
+	port := utils.MustGetenv("PORT")
 	if port == "" {
 		port = "8090"
 	}

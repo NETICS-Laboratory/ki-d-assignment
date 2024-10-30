@@ -2,8 +2,8 @@ package service
 
 import (
 	"fmt"
+	"ki-d-assignment/utils"
 	"log"
-	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -34,7 +34,7 @@ func NewJWTService() JWTService {
 }
 
 func getSecretKey() string {
-	secretKey := os.Getenv("JWT_SECRET")
+	secretKey := utils.MustGetenv("JWT_SECRET")
 	if secretKey == "" {
 		secretKey = "Template"
 	}
