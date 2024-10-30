@@ -2,33 +2,25 @@ package config
 
 import (
 	"fmt"
-	"ki-d-assignment/entity"
-	"os"
+	"ki-d-assignment/utils"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 func SetupDatabaseConnection() *gorm.DB {
-	dbUser := os.Getenv("DB_USER")
-	dbPass := os.Getenv("DB_PASS")
-	dbHost := os.Getenv("DB_HOST")
-	dbName := os.Getenv("DB_NAME")
-	dbPort := os.Getenv("DB_PORT")
+	dbUser := utils.MustGetenv("DB_USER")
+	dbPass := utils.MustGetenv("DB_PASS")
+	dbHost := utils.MustGetenv("DB_HOST")
+	dbName := utils.MustGetenv("DB_NAME")
+	dbPort := utils.MustGetenv("DB_PORT")
 
-	dsn := fmt.Sprintf("host=%v user=%v password=%v dbname=%v port=%v TimeZone=Asia/Jakarta", dbHost, dbUser, dbPass, dbName, dbPort)
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	dsn := fmt.Sprintf("host=%v user=%v password=%v dbname=%v port=%v sslmode=disable", dbHost, dbUser, dbPass, dbName, dbPort)
+	db, err := gorm.Open(postgres.New(postgres.Config{
+		DSN:                  dsn,
+		PreferSimpleProtocol: true,
+	}), &gorm.Config{})
 	if err != nil {
-		fmt.Println(err)
-		panic(err)
-	}
-
-	if err := db.AutoMigrate(
-		entity.User{},
-		entity.Files{},
-		entity.AccessRequest{},
-	); err != nil {
-		fmt.Println(err)
 		panic(err)
 	}
 

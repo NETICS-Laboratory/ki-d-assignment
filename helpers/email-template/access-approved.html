@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Access Approved</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            color: #333333;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            color: #4CAF50;
+        }
+        .keys {
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: "Courier New", Courier, monospace;
+        }
+        .instructions {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #e8f5e9;
+            border-left: 4px solid #4CAF50;
+        }
+        .footer {
+            margin-top: 30px;
+            font-size: 0.9em;
+            color: #888888;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Access Request Approved</h2>
+        <p>Hello <strong>{{.Username}}</strong>,</p>
+        <p>We are pleased to inform you that your access request has been approved by <strong>{{.RequestedUsername}}</strong>. You can now securely access the requested resources.</p>
+
+        <p><strong>Your Encrypted Access Keys:</strong></p>
+        <div class="keys">
+            <p><strong>Secret Key:</strong> {{.EncryptedSecretKey}}</p>
+            <p><strong>Secret Key (8 Byte):</strong> {{.EncryptedSecretKey8Byte}}</p>
+        </div>
+
+        <div class="instructions">
+            <p><strong>Instructions to Access:</strong></p>
+            <ol>
+                <li>Use your private RSA key to decrypt the above keys.</li>
+                <li>After decryption, use the obtained keys to access the files and data securely.</li>
+            </ol>
+        </div>
+
+        <div class="footer">
+            <p>Sincerly,<br>{{.RequestedUsername}}</p>
+        </div>
+    </div>
+</body>
+</html>
