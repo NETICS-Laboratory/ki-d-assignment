@@ -3,6 +3,7 @@ package helpers
 import (
 	"crypto/rand"
 	"crypto/rsa"
+	"encoding/base64"
 	"fmt"
 	"ki-d-assignment/utils"
 	"time"
@@ -39,6 +40,10 @@ func EncryptData(data string, secretKey []byte, secretKey8Byte []byte) (string, 
 	return encAES, encDES, encRC4, nil
 }
 
-func EncryptWithPublicKey(data []byte, pub *rsa.PublicKey) ([]byte, error) {
-	return rsa.EncryptPKCS1v15(rand.Reader, pub, data)
+func EncryptWithPublicKey(data []byte, pub *rsa.PublicKey) (string, error) {
+	encryptedBytes, err := rsa.EncryptPKCS1v15(rand.Reader, pub, data)
+	if err != nil {
+		return "", err
+	}
+	return base64.StdEncoding.EncodeToString(encryptedBytes), nil
 }

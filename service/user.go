@@ -37,6 +37,8 @@ type UserService interface {
 	GetSentAccessRequests(ctx context.Context, userID uuid.UUID) ([]entity.AccessRequest, error)
 	GetReceivedAccessRequests(ctx context.Context, userID uuid.UUID) ([]entity.AccessRequest, error)
 	UpdateAccessRequestStatus(ctx context.Context, userID, requestID uuid.UUID, status string) error
+
+	DecryptKeys(ctx context.Context, userID uuid.UUID, encryptedKey string, encryptedKey8Byte string) (string, string, error)
 }
 
 type userService struct {
@@ -136,10 +138,6 @@ func (us *userService) RegisterUser(ctx context.Context, userDTO dto.UserCreateD
 	return us.userRepository.RegisterUser(ctx, user)
 }
 
-// func (us *userService) GetAllUser(ctx context.Context) ([]entity.User, error) {
-// 	return us.userRepository.GetAllUser(ctx)
-// }
-
 func (us *userService) FindUserByUsername(ctx context.Context, username string) (entity.User, error) {
 	return us.userRepository.FindUserByUsername(ctx, username)
 }
@@ -173,37 +171,6 @@ func (us *userService) CheckUser(ctx context.Context, username string) (bool, er
 	}
 	return true, nil
 }
-
-// func (us *userService) DeleteUser(ctx context.Context, userID uuid.UUID) error {
-// 	return us.userRepository.DeleteUser(ctx, userID)
-// }
-
-// func (us *userService) UpdateUser(ctx context.Context, userDTO dto.UserUpdateDto) error {
-// 	user, err := us.userRepository.FindUserByID(ctx, userDTO.ID)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	if userDTO.Name != "" {
-// 		user.Name = userDTO.Name
-// 	}
-// 	if userDTO.Email != "" {
-// 		user.Email = userDTO.Email
-// 	}
-// 	if userDTO.NoTelp != "" {
-// 		user.NoTelp = userDTO.NoTelp
-// 	}
-// 	if userDTO.Password != "" {
-// 		// Hash new password before saving
-// 		hashedPassword, err := utils.HashPassword(userDTO.Password)
-// 		if err != nil {
-// 			return err
-// 		}
-// 		user.Password = hashedPassword
-// 	}
-
-// 	return us.userRepository.UpdateUser(ctx, user)
-// }
 
 func (us *userService) MeUser(ctx context.Context, userID uuid.UUID) (entity.User, error) {
 	return us.userRepository.FindUserByID(ctx, userID)
@@ -359,8 +326,6 @@ func (us *userService) UpdateAccessRequestStatus(ctx context.Context, userID, re
 			return err
 		}
 
-		// Encrypt secret key requested user with User A's public key
-
 		requestedUser, err := us.userRepository.FindUserByID(ctx, userID)
 		if err != nil {
 			return err
@@ -384,8 +349,8 @@ func (us *userService) UpdateAccessRequestStatus(ctx context.Context, userID, re
 		emailBody, err := buildKeyAccessEmail(
 			requestingUser.Username,
 			requestedUser.Username,
-			fmt.Sprintf("%x", encryptedSecretKey),
-			fmt.Sprintf("%x", encryptedSecretKey8Byte),
+			encryptedSecretKey,
+			encryptedSecretKey8Byte,
 		)
 		if err != nil {
 			return fmt.Errorf("failed to build email body: %v", err)
@@ -400,20 +365,17 @@ func (us *userService) UpdateAccessRequestStatus(ctx context.Context, userID, re
 }
 
 func buildKeyAccessEmail(username, requestedUsername, encryptedSecretKey, encryptedSecretKey8Byte string) (string, error) {
-	// Load the HTML template
 	htmlFilePath := "helpers/email-template/access-approved.html"
 	htmlTemplate, err := ioutil.ReadFile(htmlFilePath)
 	if err != nil {
 		return "", err
 	}
 
-	// Parse the HTML template with placeholders
 	tmpl, err := template.New("email").Parse(string(htmlTemplate))
 	if err != nil {
 		return "", err
 	}
 
-	// Data to inject into the template
 	data := struct {
 		Username                string
 		RequestedUsername       string
@@ -426,11 +388,25 @@ func buildKeyAccessEmail(username, requestedUsername, encryptedSecretKey, encryp
 		EncryptedSecretKey8Byte: encryptedSecretKey8Byte,
 	}
 
-	// Execute the template with the data
 	var body bytes.Buffer
 	if err := tmpl.Execute(&body, data); err != nil {
 		return "", err
 	}
 
 	return body.String(), nil
+}
+
+func (us *userService) DecryptKeys(ctx context.Context, userID uuid.UUID, encryptedKey string, encryptedKey8Byte string) (string, string, error) {
+	user, err := us.userRepository.FindUserByID(ctx, userID)
+	if err != nil {
+		return "", "", fmt.Errorf("user not found: %v", err)
+	}
+
+	privateKeyPath := filepath.Join("uploads", user.Username, "secret", "private_key.pem")
+	decryptedKey, decryptedKey8Byte, err := helpers.DecryptWithPrivateKey(privateKeyPath, encryptedKey, encryptedKey8Byte)
+	if err != nil {
+		return "", "", err
+	}
+
+	return decryptedKey, decryptedKey8Byte, nil
 }
