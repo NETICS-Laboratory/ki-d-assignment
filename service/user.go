@@ -85,6 +85,11 @@ func (us *userService) RegisterUser(ctx context.Context, userDTO dto.UserCreateD
 	}
 	user.SecretKey8Byte = secretKey8Byte
 
+	// Generate asymmetric keys for the user
+	if err := utils.GenerateAsymmetricKeys(user.ID); err != nil {
+		return entity.User{}, err
+	}
+
 	// ID CARD
 	// Validate file type for id card
 	fileHeader := userDTO.ID_Card
@@ -119,11 +124,6 @@ func (us *userService) RegisterUser(ctx context.Context, userDTO dto.UserCreateD
 	user.ID_Card_DES = desFile
 
 	// fmt.Printf("%v\n%v\n%v", user.ID_Card_AES, user.ID_Card_RC4, user.ID_Card_DES)
-
-	// Generate asymmetric keys for the user
-	if err := utils.GenerateAsymmetricKeys(user.ID); err != nil {
-		return entity.User{}, err
-	}
 
 	return us.userRepository.RegisterUser(ctx, user)
 }
@@ -165,37 +165,6 @@ func (us *userService) CheckUser(ctx context.Context, username string) (bool, er
 	}
 	return true, nil
 }
-
-// func (us *userService) DeleteUser(ctx context.Context, userID uuid.UUID) error {
-// 	return us.userRepository.DeleteUser(ctx, userID)
-// }
-
-// func (us *userService) UpdateUser(ctx context.Context, userDTO dto.UserUpdateDto) error {
-// 	user, err := us.userRepository.FindUserByID(ctx, userDTO.ID)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	if userDTO.Name != "" {
-// 		user.Name = userDTO.Name
-// 	}
-// 	if userDTO.Email != "" {
-// 		user.Email = userDTO.Email
-// 	}
-// 	if userDTO.NoTelp != "" {
-// 		user.NoTelp = userDTO.NoTelp
-// 	}
-// 	if userDTO.Password != "" {
-// 		// Hash new password before saving
-// 		hashedPassword, err := utils.HashPassword(userDTO.Password)
-// 		if err != nil {
-// 			return err
-// 		}
-// 		user.Password = hashedPassword
-// 	}
-
-// 	return us.userRepository.UpdateUser(ctx, user)
-// }
 
 func (us *userService) MeUser(ctx context.Context, userID uuid.UUID) (entity.User, error) {
 	return us.userRepository.FindUserByID(ctx, userID)

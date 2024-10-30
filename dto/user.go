@@ -57,3 +57,18 @@ type AccessRequestResponseDto struct {
 // 	SecretKey      string `json:"encrypted_secret_key"`
 // 	SecretKey8Byte string `json:"encrypted_secret_key8byte"`
 // }
+
+type UserSymmetricKeysDTO struct {
+	SecretKey      string `json:"secret_key"`
+	SecretKey8Byte string `json:"secret_key_8_byte"`
+}
+
+type EncryptedUserSymmetricKeysDTO struct {
+	EncryptedSecretKey 		string `json:"encrypted_secret_key"`
+	EncryptedSecretKey8Byte string `json:"encrypted_secret_key_8_byte"`
+}
+
+type DecryptedUserSymmetricKeysDTO struct {
+	DecryptedSecretKey 		string `json:"decrypted_secret_key"`
+	DecryptedSecretKey8Byte string `json:"decrypted_secret_key_8_byte"`
+}
