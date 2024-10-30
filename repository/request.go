@@ -10,7 +10,9 @@ import (
 
 type AccessRequestRepository interface {
 	CreateAccessRequest(ctx context.Context, request entity.AccessRequest) (entity.AccessRequest, error)
-	GetAccessRequestByUsers(ctx context.Context, userID, allowedUserID uuid.UUID) (entity.AccessRequest, error)
+	GetAccessRequestsByUserID(ctx context.Context, userID uuid.UUID) ([]entity.AccessRequest, error)
+	CheckExistingAccessRequest(ctx context.Context, userID, requestedUserID uuid.UUID) (bool, error)
+	UpdateAccessRequestStatus(ctx context.Context, requestID uuid.UUID, status string) error
 }
 
 type accessRequestConnection struct {
@@ -29,8 +31,24 @@ func (db *accessRequestConnection) CreateAccessRequest(ctx context.Context, requ
 	return request, err
 }
 
-func (db *accessRequestConnection) GetAccessRequestByUsers(ctx context.Context, userID, allowedUserID uuid.UUID) (entity.AccessRequest, error) {
+func (db *accessRequestConnection) CheckExistingAccessRequest(ctx context.Context, userID, requestedUserID uuid.UUID) (bool, error) {
 	var request entity.AccessRequest
-	err := db.connection.Where("user_id = ? AND allowed_user_id = ?", userID, allowedUserID).First(&request).Error
-	return request, err
+	err := db.connection.Where("user_id = ? AND requested_user_id = ?", userID, requestedUserID).Take(&request).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+func (db *accessRequestConnection) GetAccessRequestsByUserID(ctx context.Context, userID uuid.UUID) ([]entity.AccessRequest, error) {
+	var requests []entity.AccessRequest
+	err := db.connection.Where("user_id = ?", userID).Find(&requests).Error
+	return requests, err
+}
+
+func (db *accessRequestConnection) UpdateAccessRequestStatus(ctx context.Context, requestID uuid.UUID, status string) error {
+	return db.connection.Model(&entity.AccessRequest{}).Where("id = ?", requestID).Update("status", status).Error
 }

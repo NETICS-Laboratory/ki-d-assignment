@@ -42,14 +42,14 @@ type UserRequestDecryptedDto struct {
 }
 
 type AccessRequestCreateDto struct {
-	AllowedUsername string `json:"allowed_username" binding:"required"`
+	RequestedUsername string `json:"requested_username" binding:"required"`
 }
 
 type AccessRequestResponseDto struct {
-	ID            uuid.UUID `json:"id"`
-	UserID        uuid.UUID `json:"user_id"`
-	AllowedUserID uuid.UUID `json:"allowed_user_id"`
-	Status        string    `json:"status"`
+	ID              uuid.UUID `json:"id"`
+	UserID          uuid.UUID `json:"user_id"`
+	RequestedUserID uuid.UUID `json:"requested_user_id"`
+	Status          string    `json:"status"`
 }
 
 // type UserRequestDataDTO struct {

@@ -30,10 +30,11 @@ func main() {
 
 		jwtService service.JWTService = service.NewJWTService()
 
-		userRepository repository.UserRepository = repository.NewUserRepository(db)
-		fileRepository repository.FileRepository = repository.NewFileRepository(db)
+		userRepository          repository.UserRepository          = repository.NewUserRepository(db)
+		fileRepository          repository.FileRepository          = repository.NewFileRepository(db)
+		accessRequestRepository repository.AccessRequestRepository = repository.NewAccessRequestRepository(db)
 
-		userService service.UserService = service.NewUserService(userRepository)
+		userService service.UserService = service.NewUserService(userRepository, accessRequestRepository)
 		fileService service.FileService = service.NewFileService(fileRepository, userRepository)
 
 		userController controller.UserController = controller.NewUserController(userService, jwtService)

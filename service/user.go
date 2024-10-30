@@ -26,18 +26,21 @@ type UserService interface {
 	MeUser(ctx context.Context, userID uuid.UUID) (entity.User, error)
 	MeUserDecrypted(ctx context.Context, userID uuid.UUID) (dto.UserRequestDecryptedDto, error)
 	DecryptUserIDCard(ctx context.Context, userID uuid.UUID) error
-	RequestAccess(ctx context.Context, userID, allowedUserID uuid.UUID) (entity.AccessRequest, error)
+
+	RequestAccess(ctx context.Context, userID, requestedUserID uuid.UUID) (entity.AccessRequest, error)
 	GetAccessRequests(ctx context.Context, userID uuid.UUID) ([]entity.AccessRequest, error)
 	UpdateAccessRequestStatus(ctx context.Context, requestID uuid.UUID, status string) error
 }
 
 type userService struct {
-	userRepository repository.UserRepository
+	userRepository          repository.UserRepository
+	accessRequestRepository repository.AccessRequestRepository
 }
 
-func NewUserService(ur repository.UserRepository) UserService {
+func NewUserService(ur repository.UserRepository, arr repository.AccessRequestRepository) UserService {
 	return &userService{
-		userRepository: ur,
+		userRepository:          ur,
+		accessRequestRepository: arr,
 	}
 }
 
@@ -283,19 +286,27 @@ func (us *userService) DecryptUserIDCard(ctx context.Context, userID uuid.UUID) 
 	return nil
 }
 
-func (us *userService) RequestAccess(ctx context.Context, userID, allowedUserID uuid.UUID) (entity.AccessRequest, error) {
-	request := entity.AccessRequest{
-		UserID:        userID,
-		AllowedUserID: allowedUserID,
-		Status:        "pending",
+func (us *userService) RequestAccess(ctx context.Context, userID, requestedUserID uuid.UUID) (entity.AccessRequest, error) {
+	exists, err := us.accessRequestRepository.CheckExistingAccessRequest(ctx, userID, requestedUserID)
+	if err != nil {
+		return entity.AccessRequest{}, err
 	}
-	return us.userRepository.CreateAccessRequest(ctx, request)
+	if exists {
+		return entity.AccessRequest{}, errors.New("Akses Request Ke User Tersebut Sudah Ada")
+	}
+
+	request := entity.AccessRequest{
+		UserID:          userID,
+		RequestedUserID: requestedUserID,
+		Status:          "pending",
+	}
+	return us.accessRequestRepository.CreateAccessRequest(ctx, request)
 }
 
 func (us *userService) GetAccessRequests(ctx context.Context, userID uuid.UUID) ([]entity.AccessRequest, error) {
-	return us.userRepository.GetAccessRequestsByUserID(ctx, userID)
+	return us.accessRequestRepository.GetAccessRequestsByUserID(ctx, userID)
 }
 
 func (us *userService) UpdateAccessRequestStatus(ctx context.Context, requestID uuid.UUID, status string) error {
-	return us.userRepository.UpdateAccessRequestStatus(ctx, requestID, status)
+	return us.accessRequestRepository.UpdateAccessRequestStatus(ctx, requestID, status)
 }

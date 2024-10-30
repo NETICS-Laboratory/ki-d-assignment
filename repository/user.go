@@ -15,9 +15,6 @@ type UserRepository interface {
 	FindUserByID(ctx context.Context, userID uuid.UUID) (entity.User, error)
 	// DeleteUser(ctx context.Context, userID uuid.UUID) (error)
 	// UpdateUser(ctx context.Context, user entity.User) (error)
-	CreateAccessRequest(ctx context.Context, accessRequest entity.AccessRequest) (entity.AccessRequest, error)
-	GetAccessRequestsByUserID(ctx context.Context, userID uuid.UUID) ([]entity.AccessRequest, error)
-	UpdateAccessRequestStatus(ctx context.Context, requestID uuid.UUID, status string) error
 }
 
 type userConnection struct {
@@ -63,25 +60,6 @@ func (db *userConnection) FindUserByID(ctx context.Context, userID uuid.UUID) (e
 		return user, ux.Error
 	}
 	return user, nil
-}
-
-func (db *userConnection) CreateAccessRequest(ctx context.Context, accessRequest entity.AccessRequest) (entity.AccessRequest, error) {
-	accessRequest.ID = uuid.New()
-	result := db.connection.Create(&accessRequest)
-	if result.Error != nil {
-		return entity.AccessRequest{}, result.Error
-	}
-	return accessRequest, nil
-}
-
-func (db *userConnection) GetAccessRequestsByUserID(ctx context.Context, userID uuid.UUID) ([]entity.AccessRequest, error) {
-	var requests []entity.AccessRequest
-	err := db.connection.Where("allowed_user_id = ?", userID).Find(&requests).Error
-	return requests, err
-}
-
-func (db *userConnection) UpdateAccessRequestStatus(ctx context.Context, requestID uuid.UUID, status string) error {
-	return db.connection.Model(&entity.AccessRequest{}).Where("id = ?", requestID).Update("status", status).Error
 }
 
 // func(db *userConnection) DeleteUser(ctx context.Context, userID uuid.UUID) (error) {
