@@ -16,16 +16,16 @@ import (
 
 type UserController interface {
 	RegisterUser(ctx *gin.Context)
-	// GetAllUser(ctx *gin.Context)
 	LoginUser(ctx *gin.Context)
-	// DeleteUser(ctx *gin.Context)
-	// UpdateUser(ctx *gin.Context)
 	MeUser(ctx *gin.Context)
 	MeUserDecrypted(ctx *gin.Context)
 	DecryptUserIDCard(ctx *gin.Context)
+
 	RequestAccess(ctx *gin.Context)
 	GetAccessRequests(ctx *gin.Context)
 	UpdateAccessRequestStatus(ctx *gin.Context)
+
+	DecryptKeys(ctx *gin.Context)
 }
 
 type userController struct {
@@ -275,5 +275,37 @@ func (uc *userController) UpdateAccessRequestStatus(ctx *gin.Context) {
 	}
 
 	response := common.BuildResponse(true, "Access Request Status Berhasil Diupdate", nil)
+	ctx.JSON(http.StatusOK, response)
+}
+
+func (uc *userController) DecryptKeys(ctx *gin.Context) {
+	token := ctx.MustGet("token").(string)
+	userID, err := uc.jwtService.GetUserIDByToken(token)
+	if err != nil {
+		response := common.BuildErrorResponse("Gagal Memproses Request", "Token Tidak Valid", nil)
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, response)
+		return
+	}
+
+	var decryptRequest dto.RSAKeyDecryptDto
+	if err := ctx.ShouldBindJSON(&decryptRequest); err != nil {
+		response := common.BuildErrorResponse("Validation Error", err.Error(), nil)
+		ctx.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	decryptedKey, decryptedKey8Byte, err := uc.userService.DecryptKeys(ctx.Request.Context(), userID, decryptRequest.EncryptedKey, decryptRequest.EncryptedKey8Byte)
+	if err != nil {
+		res := common.BuildErrorResponse("Decryption Error", err.Error(), nil)
+		ctx.JSON(http.StatusInternalServerError, res)
+		return
+	}
+
+	// Respond with decrypted keys
+	responseData := dto.RSAKeyDecryptResponseDto{
+		DecryptedKey:      decryptedKey,
+		DecryptedKey8Byte: decryptedKey8Byte,
+	}
+	response := common.BuildResponse(true, "Keys decrypted successfully", responseData)
 	ctx.JSON(http.StatusOK, response)
 }

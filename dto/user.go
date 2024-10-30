@@ -55,3 +55,13 @@ type AccessRequestResponseDto struct {
 type AccessRequestChangeStatusDto struct {
 	Status string `json:"status" form:"status" binding:"required" validate:"oneof=pending approved denied"`
 }
+
+type RSAKeyDecryptDto struct {
+	EncryptedKey      string `json:"encrypted_key" binding:"required"`
+	EncryptedKey8Byte string `json:"encrypted_key_8_byte" binding:"required"`
+}
+
+type RSAKeyDecryptResponseDto struct {
+	DecryptedKey      string `json:"decrypted_key"`
+	DecryptedKey8Byte string `json:"decrypted_key_8_byte"`
+}

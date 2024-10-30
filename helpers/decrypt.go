@@ -1,8 +1,16 @@
 package helpers
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/base64"
+	"encoding/hex"
+	"encoding/pem"
+	"errors"
 	"fmt"
 	"ki-d-assignment/utils"
+	"os"
 	"time"
 )
 
@@ -90,4 +98,46 @@ func DecryptDataReturnIndiviual(aesciphertext string, rc4ciphertext string, desc
 	fmt.Printf("DES Ciphertext Length: %d\n\n", len(desciphertext))
 
 	return decAES, decRC4, decDES, nil
+}
+
+func DecryptWithPrivateKey(privateKeyPath, encryptedKey, encryptedKey8Byte string) (string, string, error) {
+	privateKeyFile, err := os.ReadFile(privateKeyPath)
+	if err != nil {
+		return "", "", err
+	}
+
+	block, _ := pem.Decode(privateKeyFile)
+	if block == nil || block.Type != "RSA PRIVATE KEY" {
+		return "", "", errors.New("failed to decode private key")
+	}
+
+	privateKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	if err != nil {
+		return "", "", err
+	}
+
+	encKeyBytes, err := base64.StdEncoding.DecodeString(encryptedKey)
+	if err != nil {
+		return "", "", err
+	}
+	encKey8ByteBytes, err := base64.StdEncoding.DecodeString(encryptedKey8Byte)
+	if err != nil {
+		return "", "", err
+	}
+
+	decryptedKey, err := decryptWithPrivateKeyUtils(encKeyBytes, privateKey)
+	if err != nil {
+		return "", "", err
+	}
+
+	decryptedKey8Byte, err := decryptWithPrivateKeyUtils(encKey8ByteBytes, privateKey)
+	if err != nil {
+		return "", "", err
+	}
+
+	return hex.EncodeToString(decryptedKey), hex.EncodeToString(decryptedKey8Byte), nil
+}
+
+func decryptWithPrivateKeyUtils(ciphertext []byte, priv *rsa.PrivateKey) ([]byte, error) {
+	return rsa.DecryptPKCS1v15(rand.Reader, priv, ciphertext)
 }
