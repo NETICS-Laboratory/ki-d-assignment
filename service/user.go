@@ -97,11 +97,6 @@ func (us *userService) RegisterUser(ctx context.Context, userDTO dto.UserCreateD
 	}
 	user.SecretKey8Byte = secretKey8Byte
 
-	// Generate asymmetric keys for the user
-	if err := utils.GenerateAsymmetricKeys(user.ID); err != nil {
-		return entity.User{}, err
-	}
-
 	// ID CARD
 	// Validate file type for id card
 	fileHeader := userDTO.ID_Card
