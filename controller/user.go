@@ -10,6 +10,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 )
 
 type UserController interface {
@@ -23,6 +25,7 @@ type UserController interface {
 	DecryptUserIDCard(ctx *gin.Context)
 	RequestAccess(ctx *gin.Context)
 	GetAccessRequests(ctx *gin.Context)
+	UpdateAccessRequestStatus(ctx *gin.Context)
 }
 
 type userController struct {
@@ -268,7 +271,15 @@ func (uc *userController) GetAccessRequests(ctx *gin.Context) {
 		return
 	}
 
-	result, err := uc.userService.GetAccessRequests(ctx.Request.Context(), userID)
+	requestType := ctx.Query("type")
+	var result []entity.AccessRequest
+
+	if requestType == "received" {
+		result, err = uc.userService.GetReceivedAccessRequests(ctx.Request.Context(), userID)
+	} else {
+		result, err = uc.userService.GetSentAccessRequests(ctx.Request.Context(), userID)
+	}
+
 	if err != nil {
 		res := common.BuildErrorResponse("Gagal Mendapatkan Akses Request", err.Error(), common.EmptyObj{})
 		ctx.JSON(http.StatusBadRequest, res)
@@ -276,11 +287,51 @@ func (uc *userController) GetAccessRequests(ctx *gin.Context) {
 	}
 
 	if len(result) == 0 {
-		res := common.BuildResponse(true, "Anda Tidak Memiliki Requested Access", []entity.AccessRequest{})
+		res := common.BuildResponse(true, "Tidak Ada Access Request", []entity.AccessRequest{})
 		ctx.JSON(http.StatusOK, res)
 		return
 	}
 
 	res := common.BuildResponse(true, "Berhasil Mendapatkan Akses Request", result)
 	ctx.JSON(http.StatusOK, res)
+}
+
+func (uc *userController) UpdateAccessRequestStatus(ctx *gin.Context) {
+	token := ctx.MustGet("token").(string)
+	userID, err := uc.jwtService.GetUserIDByToken(token)
+	if err != nil {
+		response := common.BuildErrorResponse("Gagal Memproses Request", "Token Tidak Valid", nil)
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, response)
+		return
+	}
+
+	requestID, err := uuid.Parse(ctx.Param("request_id"))
+	if err != nil {
+		response := common.BuildErrorResponse("Invalid Request ID", "Request ID Tidak Valid", nil)
+		ctx.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	var statusDto dto.AccessRequestChangeStatusDto
+	if err := ctx.ShouldBindJSON(&statusDto); err != nil {
+		response := common.BuildErrorResponse("Validation Error", err.Error(), nil)
+		ctx.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	if err := validator.New().Struct(&statusDto); err != nil {
+		response := common.BuildErrorResponse("Validation Error", "Status must be one of: pending, approved, denied", nil)
+		ctx.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	err = uc.userService.UpdateAccessRequestStatus(ctx.Request.Context(), userID, requestID, statusDto.Status)
+	if err != nil {
+		response := common.BuildErrorResponse("Gagal Mengupdate Access Request Status", err.Error(), nil)
+		ctx.JSON(http.StatusInternalServerError, response)
+		return
+	}
+
+	response := common.BuildResponse(true, "Access Request Status Berhasil Diupdate", nil)
+	ctx.JSON(http.StatusOK, response)
 }

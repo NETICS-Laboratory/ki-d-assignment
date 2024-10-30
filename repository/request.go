@@ -11,6 +11,8 @@ import (
 type AccessRequestRepository interface {
 	CreateAccessRequest(ctx context.Context, request entity.AccessRequest) (entity.AccessRequest, error)
 	GetAccessRequestsByUserID(ctx context.Context, userID uuid.UUID) ([]entity.AccessRequest, error)
+	GetAccessRequestsByID(ctx context.Context, requestID uuid.UUID) (entity.AccessRequest, error)
+	GetAccessRequestsByRequestedUserID(ctx context.Context, requestedUserID uuid.UUID) ([]entity.AccessRequest, error)
 	CheckExistingAccessRequest(ctx context.Context, userID, requestedUserID uuid.UUID) (bool, error)
 	UpdateAccessRequestStatus(ctx context.Context, requestID uuid.UUID, status string) error
 }
@@ -47,6 +49,18 @@ func (db *accessRequestConnection) GetAccessRequestsByUserID(ctx context.Context
 	var requests []entity.AccessRequest
 	err := db.connection.Where("user_id = ?", userID).Find(&requests).Error
 	return requests, err
+}
+
+func (db *accessRequestConnection) GetAccessRequestsByRequestedUserID(ctx context.Context, requestedUserID uuid.UUID) ([]entity.AccessRequest, error) {
+	var requests []entity.AccessRequest
+	err := db.connection.Where("requested_user_id = ?", requestedUserID).Find(&requests).Error
+	return requests, err
+}
+
+func (db *accessRequestConnection) GetAccessRequestsByID(ctx context.Context, requestID uuid.UUID) (entity.AccessRequest, error) {
+	var request entity.AccessRequest
+	err := db.connection.Where("id = ?", requestID).Take(&request).Error
+	return request, err
 }
 
 func (db *accessRequestConnection) UpdateAccessRequestStatus(ctx context.Context, requestID uuid.UUID, status string) error {

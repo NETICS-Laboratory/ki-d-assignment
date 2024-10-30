@@ -52,8 +52,6 @@ type AccessRequestResponseDto struct {
 	Status          string    `json:"status"`
 }
 
-// type UserRequestDataDTO struct {
-// 	Username       string `json:"username" form:"username"`
-// 	SecretKey      string `json:"encrypted_secret_key"`
-// 	SecretKey8Byte string `json:"encrypted_secret_key8byte"`
-// }
+type AccessRequestChangeStatusDto struct {
+	Status string `json:"status" form:"status" binding:"required" validate:"oneof=pending approved denied"`
+}

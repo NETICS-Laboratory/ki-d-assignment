@@ -28,8 +28,9 @@ type UserService interface {
 	DecryptUserIDCard(ctx context.Context, userID uuid.UUID) error
 
 	RequestAccess(ctx context.Context, userID, requestedUserID uuid.UUID) (entity.AccessRequest, error)
-	GetAccessRequests(ctx context.Context, userID uuid.UUID) ([]entity.AccessRequest, error)
-	UpdateAccessRequestStatus(ctx context.Context, requestID uuid.UUID, status string) error
+	GetSentAccessRequests(ctx context.Context, userID uuid.UUID) ([]entity.AccessRequest, error)
+	GetReceivedAccessRequests(ctx context.Context, userID uuid.UUID) ([]entity.AccessRequest, error)
+	UpdateAccessRequestStatus(ctx context.Context, userID, requestID uuid.UUID, status string) error
 }
 
 type userService struct {
@@ -303,10 +304,23 @@ func (us *userService) RequestAccess(ctx context.Context, userID, requestedUserI
 	return us.accessRequestRepository.CreateAccessRequest(ctx, request)
 }
 
-func (us *userService) GetAccessRequests(ctx context.Context, userID uuid.UUID) ([]entity.AccessRequest, error) {
+func (us *userService) GetSentAccessRequests(ctx context.Context, userID uuid.UUID) ([]entity.AccessRequest, error) {
 	return us.accessRequestRepository.GetAccessRequestsByUserID(ctx, userID)
 }
 
-func (us *userService) UpdateAccessRequestStatus(ctx context.Context, requestID uuid.UUID, status string) error {
+func (us *userService) GetReceivedAccessRequests(ctx context.Context, userID uuid.UUID) ([]entity.AccessRequest, error) {
+	return us.accessRequestRepository.GetAccessRequestsByRequestedUserID(ctx, userID)
+}
+
+func (us *userService) UpdateAccessRequestStatus(ctx context.Context, userID, requestID uuid.UUID, status string) error {
+	res, err := us.accessRequestRepository.GetAccessRequestsByID(ctx, requestID)
+	if err != nil {
+		return err
+	}
+
+	if res.RequestedUserID != userID {
+		return fmt.Errorf("Anda tidak memiliki izin untuk mengubah status permintaan ini")
+	}
+
 	return us.accessRequestRepository.UpdateAccessRequestStatus(ctx, requestID, status)
 }

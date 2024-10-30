@@ -22,5 +22,6 @@ func UserRoutes(router *gin.Engine, UserController controller.UserController, jw
 
 		userRoutes.POST("/request-access", middleware.Authenticate(jwtService), UserController.RequestAccess)
 		userRoutes.GET("/request-access", middleware.Authenticate(jwtService), UserController.GetAccessRequests)
+		userRoutes.PUT("/request-access/:request_id", middleware.Authenticate(jwtService), UserController.UpdateAccessRequestStatus)
 	}
 }
