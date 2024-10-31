@@ -22,6 +22,6 @@ func UserRoutes(router *gin.Engine, UserController controller.UserController, jw
 		userRoutes.PUT("/request-access/:request_id", middleware.Authenticate(jwtService), UserController.UpdateAccessRequestStatus)
 
 		userRoutes.POST("/decrypt-key", middleware.Authenticate(jwtService), UserController.DecryptKeys)
-		userRoutes.POST("/get-requested-user-files", middleware.Authenticate(jwtService), UserController.AccessPrivateData)
+		userRoutes.POST("/get-requested-user-data", middleware.Authenticate(jwtService), UserController.AccessPrivateData)
 	}
 }

@@ -61,3 +61,8 @@ type AccessPrivateDataRequestDto struct {
 	SecretKey             string `json:"secret_key" binding:"required"`
 	SecretKey8Byte        string `json:"secret_key_8_byte" binding:"required"`
 }
+
+type AccessPrivateDataResponseDto struct {
+	RequestedUser UserRequestDecryptedDto `json:"requested_user,omitempty"`
+	Files         []FileDecryptedResponse `json:"files,omitempty"`
+}

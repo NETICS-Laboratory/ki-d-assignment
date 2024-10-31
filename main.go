@@ -74,6 +74,5 @@ func main() {
 		port = "8090"
 	}
 
-	port = "8090"
 	server.Run("127.0.0.1:" + port)
 }

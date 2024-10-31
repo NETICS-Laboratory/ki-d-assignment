@@ -323,7 +323,8 @@ func (uc *userController) AccessPrivateData(ctx *gin.Context) {
 	}
 
 	token := ctx.MustGet("token").(string)
-	userID, err := uc.jwtService.GetUserIDByToken(token)
+	// TODO: Change for later
+	_, err := uc.jwtService.GetUserIDByToken(token)
 	if err != nil {
 		response := common.BuildErrorResponse("Gagal Memproses Request", "Token Tidak Valid", nil)
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, response)
@@ -337,13 +338,33 @@ func (uc *userController) AccessPrivateData(ctx *gin.Context) {
 		return
 	}
 
-	res, err := uc.fileService.GetRequestedUserFile(ctx.Request.Context(), userID, requestedUser, accessKeys.SecretKey, accessKeys.SecretKey8Byte)
+	resfile, err := uc.fileService.GetRequestedUserData(ctx.Request.Context(), requestedUser, accessKeys.SecretKey, accessKeys.SecretKey8Byte)
 	if err != nil {
 		response := common.BuildErrorResponse("Gagal Mendapatkan File", err.Error(), common.EmptyObj{})
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, response)
 		return
 	}
 
-	response := common.BuildResponse(true, "File Berhasil Didapatkan", res)
+	resdata, err := uc.userService.MeUserDecrypted(ctx.Request.Context(), requestedUser.ID)
+	if err != nil {
+		res := common.BuildErrorResponse("Gagal Mendapatkan User", err.Error(), common.EmptyObj{})
+		ctx.JSON(http.StatusBadRequest, res)
+		return
+	}
+
+	responseData := dto.AccessPrivateDataResponseDto{
+		RequestedUser: dto.UserRequestDecryptedDto{
+			ID:       resdata.ID,
+			Username: resdata.Username,
+			Name:     resdata.Name,
+			Email:    resdata.Email,
+			NoTelp:   resdata.NoTelp,
+			Address:  resdata.Address,
+			ID_Card:  resdata.ID_Card,
+		},
+		Files: resfile,
+	}
+
+	response := common.BuildResponse(true, "Data Berhasil Didapatkan", responseData)
 	ctx.JSON(http.StatusOK, response)
 }
