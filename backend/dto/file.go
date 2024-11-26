@@ -29,4 +29,3 @@ type FileSignDto struct {
 type FileSignResponse struct {
 	FileID    uuid.UUID `json:"file_id"`
 	Signature string    `json:"signature"`
-}

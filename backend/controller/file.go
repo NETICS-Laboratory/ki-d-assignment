@@ -130,3 +130,30 @@ func (fc *fileController) SignPDF(ctx *gin.Context) {
 	res := common.BuildResponse(true, "File signed successfully", signedFile)
 	ctx.JSON(http.StatusOK, res)
 }
+
+func (fc *fileController) SignPDF(ctx *gin.Context) {
+	token := ctx.MustGet("token").(string)
+	userID, err := fc.jwtService.GetUserIDByToken(token)
+	if err != nil {
+		response := common.BuildErrorResponse("Failed to process request", "Invalid token", nil)
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, response)
+		return
+	}
+
+	var fileDTO dto.FileSignDto
+	if err := ctx.ShouldBind(&fileDTO); err != nil {
+		res := common.BuildErrorResponse("Validation Error", err.Error(), common.EmptyObj{})
+		ctx.JSON(http.StatusBadRequest, res)
+		return
+	}
+
+	signedFile, err := fc.fileService.SignPDF(ctx.Request.Context(), fileDTO.FileID, userID)
+	if err != nil {
+		res := common.BuildErrorResponse("Failed to sign file", err.Error(), common.EmptyObj{})
+		ctx.JSON(http.StatusInternalServerError, res)
+		return
+	}
+
+	res := common.BuildResponse(true, "File signed successfully", signedFile)
+	ctx.JSON(http.StatusOK, res)
+}
