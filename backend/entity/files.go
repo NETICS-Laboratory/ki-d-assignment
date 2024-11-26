@@ -14,7 +14,7 @@ type Files struct {
 	Files_DES string    `json:"files_des" binding:"required"`
 	Signature string    `gorm:"type:text;" json:"signature"`
 	// take the user_id from users table
-	UserID uuid.UUID `gorm:"foreignKey;type:char(36)" json:"user_id"`
+	UserID uuid.UUID `gorm:"type:char(36);not_null;" json:"user_id"`
 	Timestamp
 }
 

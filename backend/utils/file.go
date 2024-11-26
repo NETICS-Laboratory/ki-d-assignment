@@ -10,7 +10,6 @@ import (
 	// "time"
 )
 
-// IsValidFileName checks if the file name contains valid characters and extensions
 func IsValidFileName(fileName string) bool {
 	// Allowed file extensions
 	ext := strings.ToLower(filepath.Ext(fileName))
@@ -128,13 +127,12 @@ func UploadFile(fileHeader *multipart.FileHeader, filePath string, secretKey []b
 }
 
 func DecryptAndSaveFiles(filePath string, aesFilePath string, rc4FilePath string, desFilePath string, secretKey []byte, secretKey8Byte []byte) error {
-	// Create decrypted folder
 	decryptedPath := filepath.Join(filePath, "decrypted")
 	if err := os.MkdirAll(decryptedPath, 0755); err != nil {
 		return err
 	}
 
-	// Decrypt and save AES file
+	// Save decrypted AES file
 	aesDecryptedFolder := filepath.Join(decryptedPath, "aes")
 	if err := os.MkdirAll(aesDecryptedFolder, 0755); err != nil {
 		return err
@@ -150,11 +148,11 @@ func DecryptAndSaveFiles(filePath string, aesFilePath string, rc4FilePath string
 	}
 	// fmt.Printf("AES File Decryption Time: %.6f ms\n", float64(time.Since(startAES).Nanoseconds())/1e6)
 	// fmt.Printf("AES Decrypted File Size: %d bytes\n\n", len(decryptedAES))
-
 	decryptedAESPath := filepath.Join(aesDecryptedFolder, removeExtension(filepath.Base(aesFilePath), ".aes"))
 	if err := os.WriteFile(decryptedAESPath, decryptedAES, 0644); err != nil {
 		return err
 	}
+	fmt.Printf("Decrypted AES file saved at: %s\n", decryptedAESPath)
 
 	// Decrypt and save RC4 file
 	rc4DecryptedFolder := filepath.Join(decryptedPath, "rc4")
