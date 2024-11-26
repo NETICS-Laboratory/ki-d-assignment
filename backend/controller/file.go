@@ -31,16 +31,18 @@ func NewFileController(fs service.FileService, us service.UserService, jwts serv
 }
 
 func (fc *fileController) UploadFile(ctx *gin.Context) {
+
 	token := ctx.MustGet("token").(string)
 	userID, err := fc.jwtService.GetUserIDByToken(token)
 	if err != nil {
-		response := common.BuildErrorResponse("Failed to process request", "Invalid token", nil)
+		response := common.BuildErrorResponse("Gagal Memproses Request", "Token Tidak Valid", nil)
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, response)
 		return
 	}
 
 	var fileDTO dto.FileCreateDto
-	if err := ctx.ShouldBind(&fileDTO); err != nil {
+	err = ctx.ShouldBind(&fileDTO)
+	if err != nil {
 		res := common.BuildErrorResponse("Validation Error", err.Error(), common.EmptyObj{})
 		ctx.JSON(http.StatusBadRequest, res)
 		return
@@ -48,86 +50,62 @@ func (fc *fileController) UploadFile(ctx *gin.Context) {
 
 	uploadedFile, err := fc.fileService.UploadFile(ctx.Request.Context(), fileDTO, userID)
 	if err != nil {
-		res := common.BuildErrorResponse("Failed to upload file", err.Error(), common.EmptyObj{})
+		res := common.BuildErrorResponse("Gagal Mengupload File", err.Error(), common.EmptyObj{})
 		ctx.JSON(http.StatusInternalServerError, res)
 		return
 	}
 
-	res := common.BuildResponse(true, "File uploaded successfully", uploadedFile)
+	res := common.BuildResponse(true, "File Berhasil Diunggah", uploadedFile)
 	ctx.JSON(http.StatusOK, res)
 }
 
 func (fc *fileController) GetUserFiles(ctx *gin.Context) {
+
 	token := ctx.MustGet("token").(string)
 	userID, err := fc.jwtService.GetUserIDByToken(token)
 	if err != nil {
-		response := common.BuildErrorResponse("Failed to process request", "Invalid token", nil)
+		response := common.BuildErrorResponse("Gagal Memproses Request", "Token Tidak Valid", nil)
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, response)
 		return
 	}
 
 	files, err := fc.fileService.GetUserFiles(ctx.Request.Context(), userID)
 	if err != nil {
-		res := common.BuildErrorResponse("Failed to retrieve files", err.Error(), common.EmptyObj{})
+		res := common.BuildErrorResponse("Gagal Mendapatkan File", err.Error(), common.EmptyObj{})
 		ctx.JSON(http.StatusInternalServerError, res)
 		return
 	}
 
-	res := common.BuildResponse(true, "Files retrieved successfully", files)
+	res := common.BuildResponse(true, "File Ditemukan", files)
 	ctx.JSON(http.StatusOK, res)
 }
 
 func (fc *fileController) GetUserFileDecrypted(ctx *gin.Context) {
+
 	token := ctx.MustGet("token").(string)
 	userID, err := fc.jwtService.GetUserIDByToken(token)
 	if err != nil {
-		response := common.BuildErrorResponse("Failed to process request", "Invalid token", nil)
+		response := common.BuildErrorResponse("Gagal Memproses Request", "Token Tidak Valid", nil)
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, response)
 		return
 	}
 
 	var fileDTO dto.FileDecryptByIDDto
-	if err := ctx.ShouldBind(&fileDTO); err != nil {
+	err = ctx.ShouldBind(&fileDTO)
+	if err != nil {
 		res := common.BuildErrorResponse("Validation Error", err.Error(), common.EmptyObj{})
 		ctx.JSON(http.StatusBadRequest, res)
 		return
 	}
 
-	file, err := fc.fileService.GetUserFileDecryptedByID(ctx.Request.Context(), fileDTO.ID, userID)
+	files, err := fc.fileService.GetUserFileDecryptedByID(ctx.Request.Context(), fileDTO.ID, userID)
 	if err != nil {
-		res := common.BuildErrorResponse("Failed to retrieve decrypted file", err.Error(), common.EmptyObj{})
+		res := common.BuildErrorResponse("Gagal Mendapatkan File", err.Error(), common.EmptyObj{})
 		ctx.JSON(http.StatusInternalServerError, res)
 		return
 	}
 
-	res := common.BuildResponse(true, "Decrypted file retrieved successfully", file)
-	ctx.JSON(http.StatusOK, res)
-}
-
-func (fc *fileController) SignPDF(ctx *gin.Context) {
-	token := ctx.MustGet("token").(string)
-	userID, err := fc.jwtService.GetUserIDByToken(token)
-	if err != nil {
-		response := common.BuildErrorResponse("Failed to process request", "Invalid token", nil)
-		ctx.AbortWithStatusJSON(http.StatusUnauthorized, response)
-		return
-	}
-
-	var fileDTO dto.FileSignDto
-	if err := ctx.ShouldBind(&fileDTO); err != nil {
-		res := common.BuildErrorResponse("Validation Error", err.Error(), common.EmptyObj{})
-		ctx.JSON(http.StatusBadRequest, res)
-		return
-	}
-
-	signedFile, err := fc.fileService.SignPDF(ctx.Request.Context(), fileDTO.FileID, userID)
-	if err != nil {
-		res := common.BuildErrorResponse("Failed to sign file", err.Error(), common.EmptyObj{})
-		ctx.JSON(http.StatusInternalServerError, res)
-		return
-	}
-
-	res := common.BuildResponse(true, "File signed successfully", signedFile)
+	res := common.BuildResponse(true, "File Ditemukan", files)
 	ctx.JSON(http.StatusOK, res)
 }
 

@@ -57,4 +57,4 @@ func (db *fileConnection) UpdateFile(file entity.Files) error {
 		return err
 	}
 	return nil
-
+}
