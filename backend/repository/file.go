@@ -12,6 +12,7 @@ type FileRepository interface {
 	UploadFile(ctx context.Context, file entity.Files) (entity.Files, error)
 	GetFilesByUserID(ctx context.Context, userID uuid.UUID) ([]entity.Files, error)
 	GetFileByIDAndUserID(ctx context.Context, fileID uuid.UUID, userID uuid.UUID) (entity.Files, error)
+	UpdateFile(file entity.Files) error
 }
 
 type fileConnection struct {
@@ -49,4 +50,11 @@ func (db *fileConnection) GetFileByIDAndUserID(ctx context.Context, fileID uuid.
 		return entity.Files{}, fc.Error
 	}
 	return file, nil
+}
+
+func (db *fileConnection) UpdateFile(file entity.Files) error {
+	if err := db.connection.Save(&file).Error; err != nil {
+		return err
+	}
+	return nil
 }

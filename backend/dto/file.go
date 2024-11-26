@@ -21,3 +21,12 @@ type FileDecryptedResponse struct {
 	Decrypted_RC4 string    `json:"decrypted_rc4"`
 	Decrypted_DES string    `json:"decrypted_des"`
 }
+
+type FileSignDto struct {
+	FileID uuid.UUID `json:"file_id" form:"file_id" binding:"required"`
+}
+
+type FileSignResponse struct {
+	FileID    uuid.UUID `json:"file_id"`
+	Signature string    `json:"signature"`
+}
