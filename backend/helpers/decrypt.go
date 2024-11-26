@@ -8,39 +8,39 @@ import (
 	"encoding/hex"
 	"encoding/pem"
 	"errors"
-	"fmt"
+	// "fmt"
 	"ki-d-assignment/utils"
 	"os"
-	"time"
+	// "time"
 )
 
 func DecryptData(aesciphertext string, rc4ciphertext string, desciphertext string, secretKey []byte, secretKey8Byte []byte) (string, error) {
-	startAES := time.Now()
+	// startAES := time.Now()
 	decAES, err := utils.AESDecrypt(aesciphertext, secretKey)
 	if err != nil {
 		return "", err
 	}
-	fmt.Printf("AES Decryption Time: %.6f ms\n", float64(time.Since(startAES).Microseconds())/1000)
-	fmt.Printf("AES Ciphertext: %v\n", aesciphertext)
-	fmt.Printf("AES Ciphertext Length: %d\n\n", len(aesciphertext))
+	// fmt.Printf("AES Decryption Time: %.6f ms\n", float64(time.Since(startAES).Microseconds())/1000)
+	// fmt.Printf("AES Ciphertext: %v\n", aesciphertext)
+	// fmt.Printf("AES Ciphertext Length: %d\n\n", len(aesciphertext))
 
-	startRC4 := time.Now()
+	// startRC4 := time.Now()
 	decRC4, err := utils.RC4Decrypt(rc4ciphertext, secretKey)
 	if err != nil {
 		return "", err
 	}
-	fmt.Printf("RC4 Decryption Time: %.6f ms\n", float64(time.Since(startRC4).Microseconds())/1000)
-	fmt.Printf("RC4 Ciphertext: %v\n", rc4ciphertext)
-	fmt.Printf("RC4 Ciphertext Length: %d\n\n", len(rc4ciphertext))
+	// fmt.Printf("RC4 Decryption Time: %.6f ms\n", float64(time.Since(startRC4).Microseconds())/1000)
+	// fmt.Printf("RC4 Ciphertext: %v\n", rc4ciphertext)
+	// fmt.Printf("RC4 Ciphertext Length: %d\n\n", len(rc4ciphertext))
 
-	startDES := time.Now()
+	// startDES := time.Now()
 	decDES, err := utils.DESDecrypt(desciphertext, secretKey8Byte)
 	if err != nil {
 		return "", err
 	}
-	fmt.Printf("DES Decryption Time: %.6f ms\n\n", float64(time.Since(startDES).Microseconds())/1000)
-	fmt.Printf("DES Ciphertext: %v\n", desciphertext)
-	fmt.Printf("DES Ciphertext Length: %d\n\n", len(desciphertext))
+	// fmt.Printf("DES Decryption Time: %.6f ms\n\n", float64(time.Since(startDES).Microseconds())/1000)
+	// fmt.Printf("DES Ciphertext: %v\n", desciphertext)
+	// fmt.Printf("DES Ciphertext Length: %d\n\n", len(desciphertext))
 
 	if decAES == decDES && decDES == decRC4 {
 		return decAES, nil
@@ -50,32 +50,32 @@ func DecryptData(aesciphertext string, rc4ciphertext string, desciphertext strin
 }
 
 func DecryptDataReturnIndiviual(aesciphertext string, rc4ciphertext string, desciphertext string, secretKey []byte, secretKey8Byte []byte) (string, string, string, error) {
-	startAES := time.Now()
+	// startAES := time.Now()
 	decAES, err := utils.AESDecrypt(aesciphertext, secretKey)
 	if err != nil {
 		return "", "", "", err
 	}
-	fmt.Printf("AES Decryption Time: %.6f ms\n", float64(time.Since(startAES).Microseconds())/1000)
-	fmt.Printf("AES Ciphertext: %v\n", aesciphertext)
-	fmt.Printf("AES Ciphertext Length: %d\n\n", len(aesciphertext))
+	// fmt.Printf("AES Decryption Time: %.6f ms\n", float64(time.Since(startAES).Microseconds())/1000)
+	// fmt.Printf("AES Ciphertext: %v\n", aesciphertext)
+	// fmt.Printf("AES Ciphertext Length: %d\n\n", len(aesciphertext))
 
-	startRC4 := time.Now()
+	// startRC4 := time.Now()
 	decRC4, err := utils.RC4Decrypt(rc4ciphertext, secretKey)
 	if err != nil {
 		return "", "", "", err
 	}
-	fmt.Printf("RC4 Decryption Time: %.6f ms\n", float64(time.Since(startRC4).Microseconds())/1000)
-	fmt.Printf("RC4 Ciphertext: %v\n", rc4ciphertext)
-	fmt.Printf("RC4 Ciphertext Length: %d\n\n", len(rc4ciphertext))
+	// fmt.Printf("RC4 Decryption Time: %.6f ms\n", float64(time.Since(startRC4).Microseconds())/1000)
+	// fmt.Printf("RC4 Ciphertext: %v\n", rc4ciphertext)
+	// fmt.Printf("RC4 Ciphertext Length: %d\n\n", len(rc4ciphertext))
 
-	startDES := time.Now()
+	// startDES := time.Now()
 	decDES, err := utils.DESDecrypt(desciphertext, secretKey8Byte)
 	if err != nil {
 		return "", "", "", err
 	}
-	fmt.Printf("DES Decryption Time: %.6f ms\n\n", float64(time.Since(startDES).Microseconds())/1000)
-	fmt.Printf("DES Ciphertext: %v\n", desciphertext)
-	fmt.Printf("DES Ciphertext Length: %d\n\n", len(desciphertext))
+	// fmt.Printf("DES Decryption Time: %.6f ms\n\n", float64(time.Since(startDES).Microseconds())/1000)
+	// fmt.Printf("DES Ciphertext: %v\n", desciphertext)
+	// fmt.Printf("DES Ciphertext Length: %d\n\n", len(desciphertext))
 
 	return decAES, decRC4, decDES, nil
 }

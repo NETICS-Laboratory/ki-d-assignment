@@ -10,6 +10,8 @@ import (
 	"ki-d-assignment/helpers"
 	"ki-d-assignment/repository"
 	"ki-d-assignment/utils"
+	"os"
+	"path/filepath"
 
 	"github.com/google/uuid"
 )
@@ -19,6 +21,7 @@ type FileService interface {
 	GetUserFiles(ctx context.Context, userID uuid.UUID) ([]entity.Files, error)
 	GetUserFileDecryptedByID(ctx context.Context, fileID uuid.UUID, userID uuid.UUID) (dto.FileDecryptedResponse, error)
 	GetRequestedUserData(ctx context.Context, requestedUser entity.User, secretKeys string, secretKeys8Byte string) ([]dto.FileDecryptedResponse, error)
+	SignPDF(ctx context.Context, fileID uuid.UUID, userID uuid.UUID) (entity.Files, error)
 }
 
 type fileService struct {
@@ -178,4 +181,61 @@ func (fs *fileService) GetRequestedUserData(ctx context.Context, requestedUser e
 	}
 
 	return decryptedResponses, nil
+}
+
+func (fs *fileService) SignPDF(ctx context.Context, fileID uuid.UUID, userID uuid.UUID) (entity.Files, error) {
+	file, err := fs.fileRepository.GetFileByIDAndUserID(ctx, fileID, userID)
+	if err != nil {
+		return entity.Files{}, fmt.Errorf("file not found or access denied: %v", err)
+	}
+
+	user, err := fs.userRepository.FindUserByID(ctx, userID)
+	if err != nil {
+		return entity.Files{}, fmt.Errorf("user not found: %v", err)
+	}
+
+	decryptedAESPath, decryptedRC4Path, decryptedDESPath, err := helpers.DecryptDataReturnIndiviual(
+		file.Files_AES, file.Files_RC4, file.Files_DES, user.SecretKey, user.SecretKey8Byte)
+	if err != nil {
+		return entity.Files{}, fmt.Errorf("gagal melakukan dekripsi jalur file: %v", err)
+	}
+
+	filePath := fmt.Sprintf("uploads/%s", user.Username)
+	AESPath, _, _, err := utils.DecryptAndSaveFilesReturnPath(filePath, decryptedAESPath, decryptedRC4Path, decryptedDESPath, user.SecretKey, user.SecretKey8Byte)
+	if err != nil {
+		return entity.Files{}, fmt.Errorf("gagal melakukan dekripsi file dan menyimpannya: %v", err)
+	}
+
+	decryptedFilePath := fmt.Sprintf("uploads/%s/decrypted/aes/%s", user.Username, filepath.Base(AESPath))
+	fmt.Printf("Looking for decrypted file at: %s\n", decryptedFilePath)
+
+	privateKeyPath := fmt.Sprintf("uploads/%s/secret/private_key.pem", user.Username)
+	fmt.Printf("Looking for private key at: %s\n", privateKeyPath)
+
+	signedFilePath := fmt.Sprintf("uploads/%s/signed/%s.signed", user.Username, filepath.Base(AESPath))
+	fmt.Printf("Will save signed file at: %s\n", signedFilePath)
+
+	// Check if decrypted file exists
+	if _, err := os.Stat(decryptedFilePath); os.IsNotExist(err) {
+		return entity.Files{}, fmt.Errorf("decrypted file not found: %s", decryptedFilePath)
+	}
+
+	// Check if private key exists
+	if _, err := os.Stat(privateKeyPath); os.IsNotExist(err) {
+		return entity.Files{}, fmt.Errorf("private key not found: %s", privateKeyPath)
+	}
+
+	// Sign the file
+	err = utils.SignPDFWithOpenSSL(decryptedFilePath, privateKeyPath, signedFilePath)
+	if err != nil {
+		return entity.Files{}, fmt.Errorf("failed to sign PDF: %v", err)
+	}
+
+	// Update the file record with the signed file path
+	file.Signature = signedFilePath
+	if err := fs.fileRepository.UpdateFile(file); err != nil {
+		return entity.Files{}, fmt.Errorf("failed to update file record: %v", err)
+	}
+
+	return file, nil
 }
