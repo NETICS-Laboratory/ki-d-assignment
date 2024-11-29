@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Card from "@mui/material/Card";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
@@ -18,140 +18,31 @@ import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
 import Table from "examples/Tables/Table";
 
+// Axios for API calls
 import axios from "axios";
 
+// Material UI Snackbar for notifications
+import { Snackbar, Alert } from "@mui/material";
+
 function VerifySignature() {
-  const [data, setData] = useState({});
-  // const [username, setUsername] = useState("");
-  // const [password, setPassword] = useState("");
+  const [file_id, setFileID] = useState("");
+  const [signature, setSignature] = useState("");
+  const [openSnackbar, setOpenSnackbar] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = useState("success"); // "success" or "error"
 
-  const [requested_user_username, setRequested_user_username] = useState("");
-  const [encrypted_key, setEncrypted_key] = useState("");
-  const [encrypted_key_8_byte, setEncrypted_key_8_byte] = useState("");
-  const [secret_key, setSecret_key] = useState("");
-  const [secret_key_8_byte, setSecret_key_8_byte] = useState("");
-
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [decryptedData, setDecryptedData] = useState(null);
-  const [rows, setRows] = useState([]);
-
-  const fetchRequestedUserData = async () => {
-    try {
-      const token = localStorage.getItem("token");
-
-      const response = await axios.post(
-        "http://127.0.0.1:8090/api/user/get-requested-user-data",
-        {
-          requested_user_username,
-          secret_key,
-          secret_key_8_byte,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const responseData = response.data.data.requested_user;
-
-      setData(responseData);
-      setIsLoggedIn(true);
-
-      // Set rows
-      setRows([
-        {
-          data: (
-            <SoftTypography variant="caption" fontWeight="medium">
-              Name
-            </SoftTypography>
-          ),
-          plaintext: (
-            <SoftTypography variant="caption" color="secondary" fontWeight="medium">
-              {responseData.name}
-            </SoftTypography>
-          ),
-        },
-        {
-          data: (
-            <SoftTypography variant="caption" fontWeight="medium">
-              Email
-            </SoftTypography>
-          ),
-          plaintext: (
-            <SoftTypography variant="caption" color="secondary" fontWeight="medium">
-              {responseData.email}
-            </SoftTypography>
-          ),
-        },
-        {
-          data: (
-            <SoftTypography variant="caption" fontWeight="medium">
-              Phone
-            </SoftTypography>
-          ),
-          plaintext: (
-            <SoftTypography variant="caption" color="secondary" fontWeight="medium">
-              {responseData.no_telp}
-            </SoftTypography>
-          ),
-        },
-        {
-          data: (
-            <SoftTypography variant="caption" fontWeight="medium">
-              Address
-            </SoftTypography>
-          ),
-          plaintext: (
-            <SoftTypography variant="caption" color="secondary" fontWeight="medium">
-              {responseData.address}
-            </SoftTypography>
-          ),
-        },
-        {
-          data: (
-            <SoftTypography variant="caption" fontWeight="medium">
-              ID Card
-            </SoftTypography>
-          ),
-          plaintext: (
-            // <SoftTypography variant="caption" color="secondary" fontWeight="medium">
-            //   {responseData.id_card}
-            // </SoftTypography>
-
-            <div>
-              <img
-                src={`${process.env.PUBLIC_URL}/idcard-example.jpg`} // Adjust the URL as necessary
-                alt="ID Card"
-                style={{ width: "100px", height: "auto" }} // Set desired size
-              />
-            </div>
-          ),
-        },
-      ]);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    }
-  };
-
-  // Table columns setup
-  const columns = [
-    { name: "data", label: "Data", align: "center", width: "20%" },
-    { name: "plaintext", label: "Plaintext", align: "left", width: "80%" },
-  ];
-
-  const handleDecryptRequested = async (e) => {
+  const handleVerify = async (e) => {
     e.preventDefault();
 
     const token = localStorage.getItem("token");
 
     try {
-      // Call the login API
+      // Call the verify signature API
       const response = await axios.post(
-        "http://127.0.0.1:8090/api/user/decrypt-key",
+        "http://127.0.0.1:8090/api/files/verify-digital-signature",
         {
-          encrypted_key,
-          encrypted_key_8_byte,
+          file_id,
+          signature,
         },
         {
           headers: {
@@ -160,14 +51,17 @@ function VerifySignature() {
         }
       );
 
-      const responseData = response.data.data;
-
-      setSecret_key(responseData.decrypted_key);
-      setSecret_key_8_byte(responseData.decrypted_key_8_byte);
-
-      fetchRequestedUserData();
+      // If verification is successful
+      setSnackbarMessage("Verification Successful!");
+      setSnackbarSeverity("success");
+      setOpenSnackbar(true);
     } catch (error) {
-      console.error("Error during decrypting requested data:", error);
+      console.error("Error during verifying signature:", error);
+
+      // If there was an error in verification
+      setSnackbarMessage("Verification Failed! Please try again.");
+      setSnackbarSeverity("error");
+      setOpenSnackbar(true);
     }
   };
 
@@ -176,68 +70,66 @@ function VerifySignature() {
       <DashboardNavbar />
       <SoftBox py={3}>
         <SoftBox mb={3}>
-          {!isLoggedIn ? (
-            <Card>
-              <SoftBox p={3} textAlign="center">
-                <SoftTypography variant="h5" fontWeight="medium">
-                  Verify Digital Signature
-                </SoftTypography>
-                <SoftTypography variant="button" fontWeight="regular">
-                  Fill in the form to verify the digital signature
-                </SoftTypography>
-              </SoftBox>
-              <Separator />
-              <SoftBox pt={2} pb={3} px={3}>
-                <SoftBox component="form" role="form" onSubmit={handleDecryptRequested}>
-                  <SoftBox mb={2}>
-                    <SoftBox mb={2}>
-                      <SoftInput
-                        type="file"
-                        name="id_card"
-                        // onChange={handleChange}
-                        // accept="image/*" // Optional: limit to image files
-                      />
-                    </SoftBox>
-                    <SoftInput
-                      type="text"
-                      name="requested_user_username"
-                      placeholder="Public Key"
-                      value={requested_user_username}
-                      onChange={(e) => setRequested_user_username(e.target.value)}
-                    />
-                  </SoftBox>
-
-                  <SoftBox mt={4} mb={1}>
-                    <SoftButton type="submit" variant="gradient" color="dark" fullWidth>
-                      Verify
-                    </SoftButton>
-                  </SoftBox>
-                </SoftBox>
-              </SoftBox>
-            </Card>
-          ) : (
-            <SoftBox>
-              <Card>
-                <SoftBox display="flex" justifyContent="space-between" alignItems="center" p={3}>
-                  <SoftTypography variant="h6">Decrypted Data</SoftTypography>
-                </SoftBox>
-                <SoftBox
-                  sx={{
-                    "& .MuiTableRow-root:not(:last-child)": {
-                      "& td": {
-                        borderBottom: ({ borders: { borderWidth, borderColor } }) =>
-                          `${borderWidth[1]} solid ${borderColor}`,
-                      },
-                    },
-                  }}
-                >
-                  <Table columns={columns} rows={rows} />
-                </SoftBox>
-              </Card>
+          <Card>
+            <SoftBox p={3} textAlign="center">
+              <SoftTypography variant="h5" fontWeight="medium">
+                Verify Digital Signature
+              </SoftTypography>
+              <SoftTypography variant="button" fontWeight="regular">
+                Fill in the form to verify the digital signature
+              </SoftTypography>
             </SoftBox>
-          )}
+            <Separator />
+            <SoftBox pt={2} pb={3} px={3}>
+              <SoftBox component="form" role="form" onSubmit={handleVerify}>
+                <SoftBox mb={2}>
+                  <SoftInput
+                    type="text"
+                    name="file_id"
+                    placeholder="File ID"
+                    value={file_id}
+                    onChange={(e) => setFileID(e.target.value)}
+                  />
+                </SoftBox>
+                <SoftBox mb={2}>
+                  <SoftInput
+                    type="text"
+                    name="signature"
+                    placeholder="Signature"
+                    value={signature}
+                    onChange={(e) => setSignature(e.target.value)}
+                  />
+                </SoftBox>
+
+                <SoftBox mt={4} mb={1}>
+                  <SoftButton type="submit" variant="gradient" color="dark" fullWidth>
+                    Verify
+                  </SoftButton>
+                </SoftBox>
+              </SoftBox>
+            </SoftBox>
+          </Card>
         </SoftBox>
       </SoftBox>
+
+      {/* Snackbar for showing success/error message */}
+      <Snackbar
+        open={openSnackbar}
+        autoHideDuration={6000}
+        onClose={() => setOpenSnackbar(false)}
+        anchorOrigin={{
+          vertical: "bottom", // Position the Snackbar at the top
+          horizontal: "center", // Center it horizontally
+        }}
+      >
+        <Alert
+          onClose={() => setOpenSnackbar(false)}
+          severity={snackbarSeverity}
+          sx={{ width: "100%" }}
+        >
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </DashboardLayout>
   );
 }
