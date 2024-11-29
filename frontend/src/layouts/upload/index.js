@@ -42,9 +42,12 @@ function Upload() {
       data.append(key, formData[key]);
     });
 
+    const token = localStorage.getItem("token");
+
     try {
       const response = await axios.post("http://127.0.0.1:8090/api/files/upload", data, {
         headers: {
+          Authorization: `Bearer ${token}`, // Add the Bearer token here
           "Content-Type": "multipart/form-data", // Set correct headers for file upload
         },
       });

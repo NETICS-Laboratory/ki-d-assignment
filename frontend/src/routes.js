@@ -47,6 +47,9 @@ import Upload from "layouts/upload";
 import RequestData from "layouts/request-data";
 import Inbox from "layouts/inbox";
 import DecryptedRequested from "layouts/decrypt-requested";
+import VerifySignature from "layouts/verify-signature";
+import EncryptedFile from "layouts/encrypted-file";
+import DecryptedFile from "layouts/decrypted-file";
 
 // Soft UI Dashboard React icons
 import Shop from "examples/Icons/Shop";
@@ -62,6 +65,9 @@ import InboxIcon from "@mui/icons-material/Inbox";
 import SendIcon from "@mui/icons-material/Send";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
 import FolderSharedIcon from "@mui/icons-material/FolderShared";
+import FactCheckIcon from "@mui/icons-material/FactCheck";
+import MailLockIcon from "@mui/icons-material/MailLock";
+import MailOutlineIcon from "@mui/icons-material/MailOutline";
 
 const routes = [
   // {
@@ -100,24 +106,24 @@ const routes = [
     component: <Upload />,
     noCollapse: true,
   },
-  // {
-  //   type: "collapse",
-  //   name: "Encrypted File",
-  //   key: "encrypted-file",
-  //   route: "/encrypted-file",
-  //   icon: <LockOpenIcon size="12px" />,
-  //   component: <Decrypted />,
-  //   noCollapse: true,
-  // },
-  // {
-  //   type: "collapse",
-  //   name: "Decrypted File",
-  //   key: "decrypted-file",
-  //   route: "/decrypted-file",
-  //   icon: <LockOpenIcon size="12px" />,
-  //   component: <Decrypted />,
-  //   noCollapse: true,
-  // },
+  {
+    type: "collapse",
+    name: "Encrypted File",
+    key: "encrypted-file",
+    route: "/encrypted-file",
+    icon: <MailLockIcon size="12px" />,
+    component: <EncryptedFile />,
+    noCollapse: true,
+  },
+  {
+    type: "collapse",
+    name: "Decrypted File",
+    key: "decrypted-file",
+    route: "/decrypted-file",
+    icon: <MailOutlineIcon size="12px" />,
+    component: <DecryptedFile />,
+    noCollapse: true,
+  },
   {
     type: "collapse",
     name: "Request Data",
@@ -134,6 +140,15 @@ const routes = [
     route: "/decrypted-requested",
     icon: <FolderSharedIcon size="12px" />,
     component: <DecryptedRequested />,
+    noCollapse: true,
+  },
+  {
+    type: "collapse",
+    name: "Validate Signature",
+    key: "validate-signature",
+    route: "/validate-signature",
+    icon: <FactCheckIcon size="12px" />,
+    component: <VerifySignature />,
     noCollapse: true,
   },
   {

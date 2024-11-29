@@ -20,148 +20,103 @@ import Table from "examples/Tables/Table";
 
 import axios from "axios";
 
-function Decrypted() {
-  const [data, setData] = useState({});
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [decryptedData, setDecryptedData] = useState(null);
+function DecryptedFile() {
+  const [id, setId] = useState("");
+  const [isDecrypted, setIsDecrypted] = useState(false);
   const [rows, setRows] = useState([]);
   const [downloadPath, setDownloadPath] = useState("");
 
-  const fetchData = async () => {
+  // Table columns
+  const columns = [
+    { name: "data", label: "Data", align: "center" },
+    { name: "plaintext", label: "Plaintext", align: "left" },
+  ];
+
+  // Handle decrypt button click
+  const handleDecrypt = async (e) => {
+    e.preventDefault();
+
     try {
       const token = localStorage.getItem("token");
 
-      const response = await axios.get("http://127.0.0.1:8090/api/user/me-decrypted", {
-        headers: {
-          Authorization: `Bearer ${token}`, // Add the Bearer token here
-        },
-      });
+      const response = await axios.post(
+        "http://127.0.0.1:8090/api/files/get-file-decrypted",
+        { id }, // Send file ID in the request body
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-      const responseData = response.data.data;
+      const decryptedData = response.data.data;
 
-      setData(responseData);
-
-      // Set rows
       setRows([
         {
           data: (
             <SoftTypography variant="caption" fontWeight="medium">
-              Name
+              Decrypted AES
             </SoftTypography>
           ),
           plaintext: (
             <SoftTypography variant="caption" color="secondary" fontWeight="medium">
-              {responseData.name}
+              {decryptedData.decrypted_aes}
             </SoftTypography>
           ),
         },
         {
           data: (
             <SoftTypography variant="caption" fontWeight="medium">
-              Email
+              Decrypted RC4
             </SoftTypography>
           ),
           plaintext: (
             <SoftTypography variant="caption" color="secondary" fontWeight="medium">
-              {responseData.email}
+              {decryptedData.decrypted_rc4}
             </SoftTypography>
           ),
         },
         {
           data: (
             <SoftTypography variant="caption" fontWeight="medium">
-              Phone
+              Decrypted DES
             </SoftTypography>
           ),
           plaintext: (
             <SoftTypography variant="caption" color="secondary" fontWeight="medium">
-              {responseData.no_telp}
+              {decryptedData.decrypted_des}
             </SoftTypography>
           ),
         },
         {
           data: (
             <SoftTypography variant="caption" fontWeight="medium">
-              Address
+              Signature
             </SoftTypography>
           ),
           plaintext: (
             <SoftTypography variant="caption" color="secondary" fontWeight="medium">
-              {responseData.address}
-            </SoftTypography>
-          ),
-        },
-        {
-          data: (
-            <SoftTypography variant="caption" fontWeight="medium">
-              ID Card
-            </SoftTypography>
-          ),
-          plaintext: (
-            <SoftTypography variant="caption" color="secondary" fontWeight="medium">
-              {responseData.id_card}
+              {decryptedData.signature}
             </SoftTypography>
           ),
         },
       ]);
 
       // Modify the path by changing "encrypted" to "decrypted" and removing ".aes"
-      const modifiedPath = responseData.id_card
-        .replace("encrypted", "decrypted/aes") // Replace "encrypted" with "decrypted"
+      const modifiedPath = decryptedData.decrypted_aes
+        .replace("encrypted", "decrypted") // Replace "encrypted" with "decrypted"
         .replace(".aes", ""); // Remove the ".aes" part
 
       // Store the modified path for download
       setDownloadPath(modifiedPath);
+
+      // Store file paths for download buttons
+      // setDownloadPath(decryptedData.decrypted_aes);
+
+      setIsDecrypted(true);
     } catch (error) {
-      console.error("Error fetching data:", error);
-    }
-  };
-
-  const fetchDecryptedID = async () => {
-    try {
-      const token = localStorage.getItem("token");
-
-      const response = await axios.get("http://127.0.0.1:8090/api/user/idcard-decrypted", {
-        headers: {
-          Authorization: `Bearer ${token}`, // Add the Bearer token here
-        },
-      });
-    } catch (error) {
-      console.error("Error fetching decrypted ID Card:", error);
-    }
-  };
-
-  // Table columns setup
-  const columns = [
-    { name: "data", label: "Data", align: "center", width: "20%" },
-    { name: "plaintext", label: "Plaintext", align: "left", width: "80%" },
-  ];
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-
-    try {
-      // Call the login API
-      const response = await axios.post("http://127.0.0.1:8090/api/user/login", {
-        username,
-        password,
-      });
-
-      // If the API response includes a token, the login is successful
-      if (response.data.data.token) {
-        setIsLoggedIn(true);
-
-        // Fetch the decrypted data
-        fetchData();
-        fetchDecryptedID();
-      } else {
-        alert("Invalid username or password");
-      }
-    } catch (error) {
-      console.error("Error during login:", error);
-      alert("Login failed. Please try again.");
+      console.error("Error during decryption:", error);
+      alert("Decryption failed. Please try again.");
     }
   };
 
@@ -179,37 +134,29 @@ function Decrypted() {
       <DashboardNavbar />
       <SoftBox py={3}>
         <SoftBox mb={3}>
-          {!isLoggedIn ? (
+          {!isDecrypted ? (
             <Card>
               <SoftBox p={3} textAlign="center">
                 <SoftTypography variant="h5" fontWeight="medium">
-                  Decrypt Data
+                  Decrypt File
                 </SoftTypography>
                 <SoftTypography variant="button" fontWeight="regular">
-                  Fill in your credentials to decrypt your data
+                  Enter the ID of the file you want to decrypt
                 </SoftTypography>
               </SoftBox>
               <Separator />
               <SoftBox pt={2} pb={3} px={3}>
-                <SoftBox component="form" role="form" onSubmit={handleLogin}>
+                <SoftBox component="form" role="form" onSubmit={handleDecrypt}>
                   <SoftBox mb={2}>
                     <SoftInput
                       type="text"
-                      name="username"
-                      placeholder="Username"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
+                      name="id"
+                      placeholder="File ID"
+                      value={id}
+                      onChange={(e) => setId(e.target.value)}
                     />
                   </SoftBox>
-                  <SoftBox mb={2}>
-                    <SoftInput
-                      type="password"
-                      name="password"
-                      placeholder="Password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                    />
-                  </SoftBox>
+
                   <SoftBox mt={4} mb={1}>
                     <SoftButton type="submit" variant="gradient" color="dark" fullWidth>
                       Decrypt
@@ -255,4 +202,4 @@ function Decrypted() {
   );
 }
 
-export default Decrypted;
+export default DecryptedFile;

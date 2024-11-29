@@ -20,28 +20,43 @@ import Table from "examples/Tables/Table";
 
 import axios from "axios";
 
-function Decrypted() {
+function VerifySignature() {
   const [data, setData] = useState({});
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  // const [username, setUsername] = useState("");
+  // const [password, setPassword] = useState("");
+
+  const [requested_user_username, setRequested_user_username] = useState("");
+  const [encrypted_key, setEncrypted_key] = useState("");
+  const [encrypted_key_8_byte, setEncrypted_key_8_byte] = useState("");
+  const [secret_key, setSecret_key] = useState("");
+  const [secret_key_8_byte, setSecret_key_8_byte] = useState("");
+
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [decryptedData, setDecryptedData] = useState(null);
   const [rows, setRows] = useState([]);
-  const [downloadPath, setDownloadPath] = useState("");
 
-  const fetchData = async () => {
+  const fetchRequestedUserData = async () => {
     try {
       const token = localStorage.getItem("token");
 
-      const response = await axios.get("http://127.0.0.1:8090/api/user/me-decrypted", {
-        headers: {
-          Authorization: `Bearer ${token}`, // Add the Bearer token here
+      const response = await axios.post(
+        "http://127.0.0.1:8090/api/user/get-requested-user-data",
+        {
+          requested_user_username,
+          secret_key,
+          secret_key_8_byte,
         },
-      });
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-      const responseData = response.data.data;
+      const responseData = response.data.data.requested_user;
 
       setData(responseData);
+      setIsLoggedIn(true);
 
       // Set rows
       setRows([
@@ -100,36 +115,22 @@ function Decrypted() {
             </SoftTypography>
           ),
           plaintext: (
-            <SoftTypography variant="caption" color="secondary" fontWeight="medium">
-              {responseData.id_card}
-            </SoftTypography>
+            // <SoftTypography variant="caption" color="secondary" fontWeight="medium">
+            //   {responseData.id_card}
+            // </SoftTypography>
+
+            <div>
+              <img
+                src={`${process.env.PUBLIC_URL}/idcard-example.jpg`} // Adjust the URL as necessary
+                alt="ID Card"
+                style={{ width: "100px", height: "auto" }} // Set desired size
+              />
+            </div>
           ),
         },
       ]);
-
-      // Modify the path by changing "encrypted" to "decrypted" and removing ".aes"
-      const modifiedPath = responseData.id_card
-        .replace("encrypted", "decrypted/aes") // Replace "encrypted" with "decrypted"
-        .replace(".aes", ""); // Remove the ".aes" part
-
-      // Store the modified path for download
-      setDownloadPath(modifiedPath);
     } catch (error) {
       console.error("Error fetching data:", error);
-    }
-  };
-
-  const fetchDecryptedID = async () => {
-    try {
-      const token = localStorage.getItem("token");
-
-      const response = await axios.get("http://127.0.0.1:8090/api/user/idcard-decrypted", {
-        headers: {
-          Authorization: `Bearer ${token}`, // Add the Bearer token here
-        },
-      });
-    } catch (error) {
-      console.error("Error fetching decrypted ID Card:", error);
     }
   };
 
@@ -139,39 +140,35 @@ function Decrypted() {
     { name: "plaintext", label: "Plaintext", align: "left", width: "80%" },
   ];
 
-  const handleLogin = async (e) => {
+  const handleDecryptRequested = async (e) => {
     e.preventDefault();
+
+    const token = localStorage.getItem("token");
 
     try {
       // Call the login API
-      const response = await axios.post("http://127.0.0.1:8090/api/user/login", {
-        username,
-        password,
-      });
+      const response = await axios.post(
+        "http://127.0.0.1:8090/api/user/decrypt-key",
+        {
+          encrypted_key,
+          encrypted_key_8_byte,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-      // If the API response includes a token, the login is successful
-      if (response.data.data.token) {
-        setIsLoggedIn(true);
+      const responseData = response.data.data;
 
-        // Fetch the decrypted data
-        fetchData();
-        fetchDecryptedID();
-      } else {
-        alert("Invalid username or password");
-      }
+      setSecret_key(responseData.decrypted_key);
+      setSecret_key_8_byte(responseData.decrypted_key_8_byte);
+
+      fetchRequestedUserData();
     } catch (error) {
-      console.error("Error during login:", error);
-      alert("Login failed. Please try again.");
+      console.error("Error during decrypting requested data:", error);
     }
-  };
-
-  // Download handler
-  const handleDownload = (path) => {
-    // Trigger file download by opening the file URL
-    const link = document.createElement("a");
-    link.href = `http://127.0.0.1:8090/${path}`; // Append the path to your base API URL
-    link.download = path.split("/").pop(); // Use the file name from the path
-    link.click();
   };
 
   return (
@@ -183,36 +180,36 @@ function Decrypted() {
             <Card>
               <SoftBox p={3} textAlign="center">
                 <SoftTypography variant="h5" fontWeight="medium">
-                  Decrypt Data
+                  Verify Digital Signature
                 </SoftTypography>
                 <SoftTypography variant="button" fontWeight="regular">
-                  Fill in your credentials to decrypt your data
+                  Fill in the form to verify the digital signature
                 </SoftTypography>
               </SoftBox>
               <Separator />
               <SoftBox pt={2} pb={3} px={3}>
-                <SoftBox component="form" role="form" onSubmit={handleLogin}>
+                <SoftBox component="form" role="form" onSubmit={handleDecryptRequested}>
                   <SoftBox mb={2}>
+                    <SoftBox mb={2}>
+                      <SoftInput
+                        type="file"
+                        name="id_card"
+                        // onChange={handleChange}
+                        // accept="image/*" // Optional: limit to image files
+                      />
+                    </SoftBox>
                     <SoftInput
                       type="text"
-                      name="username"
-                      placeholder="Username"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
+                      name="requested_user_username"
+                      placeholder="Public Key"
+                      value={requested_user_username}
+                      onChange={(e) => setRequested_user_username(e.target.value)}
                     />
                   </SoftBox>
-                  <SoftBox mb={2}>
-                    <SoftInput
-                      type="password"
-                      name="password"
-                      placeholder="Password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                    />
-                  </SoftBox>
+
                   <SoftBox mt={4} mb={1}>
                     <SoftButton type="submit" variant="gradient" color="dark" fullWidth>
-                      Decrypt
+                      Verify
                     </SoftButton>
                   </SoftBox>
                 </SoftBox>
@@ -236,16 +233,6 @@ function Decrypted() {
                 >
                   <Table columns={columns} rows={rows} />
                 </SoftBox>
-                <SoftBox mt={3} p={3}>
-                  <SoftButton
-                    variant="gradient"
-                    color="info"
-                    fullWidth
-                    onClick={() => handleDownload(downloadPath)}
-                  >
-                    Download File
-                  </SoftButton>
-                </SoftBox>
               </Card>
             </SoftBox>
           )}
@@ -255,4 +242,4 @@ function Decrypted() {
   );
 }
 
-export default Decrypted;
+export default VerifySignature;
