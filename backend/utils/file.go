@@ -1,7 +1,7 @@
 package utils
 
 import (
-	// "fmt"
+	"fmt"
 	"io"
 	"mime/multipart"
 	"os"
@@ -201,7 +201,7 @@ func DecryptAndSaveFiles(filePath string, aesFilePath string, rc4FilePath string
 	return nil
 }
 
-func DecryptAndSaveFilesReturnPath(filePath string, aesFilePath string, rc4FilePath string, desFilePath string, secretKey []byte, secretKey8Byte []byte) (string, string, string, error) {
+func DecryptAndSaveFilesReturnData(filePath string, aesFilePath string, rc4FilePath string, desFilePath string, secretKey []byte, secretKey8Byte []byte) (string, string, string, error) {
 	// Create decrypted folder
 	decryptedPath := filepath.Join(filePath, "decrypted")
 	if err := os.MkdirAll(decryptedPath, 0755); err != nil {

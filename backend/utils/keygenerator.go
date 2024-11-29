@@ -80,3 +80,22 @@ func GenerateAsymmetricKeys(username string) error {
 
 	return nil
 }
+
+func GetRSAPublicKey(user string) (*rsa.PublicKey, error) {
+	// Get the user's public key
+	// fmt.Println("Getting public key for user:", user)
+	publicKeyPath := fmt.Sprintf("uploads/%s/secret/public_key.pem", user)
+	
+	publicKeyFile, err := os.ReadFile(publicKeyPath)
+	if err != nil {
+		return nil, err
+	}
+	
+	publicKeyBlock, _ := pem.Decode(publicKeyFile)
+	publicKey, err := x509.ParsePKCS1PublicKey(publicKeyBlock.Bytes)
+	if err != nil {
+		return nil, err
+	}
+
+	return publicKey, nil
+}
