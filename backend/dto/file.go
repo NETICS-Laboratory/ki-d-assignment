@@ -20,6 +20,7 @@ type FileDecryptedResponse struct {
 	Decrypted_AES string    `json:"decrypted_aes"`
 	Decrypted_RC4 string    `json:"decrypted_rc4"`
 	Decrypted_DES string    `json:"decrypted_des"`
+	Signature     string    `json:"signature"`
 }
 
 type FileSignDto struct {
@@ -29,4 +30,9 @@ type FileSignDto struct {
 type FileSignResponse struct {
 	FileID    uuid.UUID `json:"file_id"`
 	Signature string    `json:"signature"`
+}
+
+type FileVerifySignatureDto struct {
+	FileID    uuid.UUID `json:"file_id" form:"file_id" binding:"required"`
+	Signature string    `json:"signature" form:"signature" binding:"required"`
 }

@@ -1,32 +1,24 @@
 package utils
 
 import (
-	"fmt"
-	"os"
-	"os/exec"
-	"path/filepath"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha256"
+	"encoding/base64"
 )
 
-func SignPDFWithOpenSSL(pdfPath string, privateKeyPath string, outputSignedPath string) error {
-	fmt.Printf("Signing PDF: input=%s, privateKey=%s, output=%s\n", pdfPath, privateKeyPath, outputSignedPath)
+func GenerateEncryptedHash(msg []byte, publicKey *rsa.PublicKey) (string, error) {
+	msgHash := sha256.Sum256(msg)
 
-	if _, err := os.Stat(pdfPath); os.IsNotExist(err) {
-		return fmt.Errorf("input PDF file does not exist: %s", pdfPath)
-	}
-	if _, err := os.Stat(privateKeyPath); os.IsNotExist(err) {
-		return fmt.Errorf("private key file does not exist: %s", privateKeyPath)
-	}
-
-	if err := os.MkdirAll(filepath.Dir(outputSignedPath), 0755); err != nil {
-		return fmt.Errorf("failed to create directory for signed file: %v", err)
-	}
-
-	cmd := exec.Command("openssl", "dgst", "-sha256", "-sign", privateKeyPath, "-out", outputSignedPath, pdfPath)
-	output, err := cmd.CombinedOutput()
+	encryptedMsgHash, err := rsa.EncryptOAEP(sha256.New(), rand.Reader, publicKey, msgHash[:], nil)
 	if err != nil {
-		return fmt.Errorf("failed to sign PDF: %v, output: %s", err, string(output))
+		return "", err
 	}
 
-	fmt.Println("PDF signed successfully!")
-	return nil
+	return base64.StdEncoding.EncodeToString(encryptedMsgHash), nil
+}
+
+func VerifyDigitalSignature(signature string, fileSignature string) (bool, error) {
+
+	return signature == fileSignature, nil
 }
