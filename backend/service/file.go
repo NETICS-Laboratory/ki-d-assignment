@@ -10,9 +10,6 @@ import (
 	"ki-d-assignment/helpers"
 	"ki-d-assignment/repository"
 	"ki-d-assignment/utils"
-	// "os"
-	// "path/filepath"
-	// "io"
 
 	"github.com/google/uuid"
 )
