@@ -12,6 +12,7 @@ import (
 	"ki-d-assignment/utils"
 
 	"github.com/google/uuid"
+	// "os"
 )
 
 type FileService interface {
@@ -20,6 +21,7 @@ type FileService interface {
 	GetUserFileDecryptedByID(ctx context.Context, fileID uuid.UUID, userID uuid.UUID) (dto.FileDecryptedResponse, error)
 	GetRequestedUserData(ctx context.Context, requestedUser entity.User, secretKeys string, secretKeys8Byte string) ([]dto.FileDecryptedResponse, error)
 	CheckFileDigitalSignature(ctx context.Context, fileID uuid.UUID, userID uuid.UUID, signature string) (bool, error)
+	VerifyEmbeddedSignature(ctx context.Context, fileDTO dto.VerifyEmbeddedSignatureDto, userID uuid.UUID) (bool, error)
 }
 
 type fileService struct {
@@ -67,19 +69,30 @@ func (fs *fileService) UploadFile(ctx context.Context, fileDTO dto.FileCreateDto
 	secretKey := user.SecretKey
 	secretKey8Byte := user.SecretKey8Byte
 
-	userPublicKey, err := utils.GetRSAPublicKey(user.Username)
-	if err != nil {
-		return entity.Files{}, fmt.Errorf("failed to get user public key: %v", err)
-	}
-
-	aesFile, rc4File, desFile, err := utils.UploadFile(fileDTO.File, encryptedFilePath, secretKey, secretKey8Byte)
-	if err != nil {
-		return entity.Files{}, fmt.Errorf("failed to upload and encrypt file: %v", err)
-
-	}
-
 	var digitalSignature string
 	if fileType == "application/pdf" {
+		userPublicKey, err := utils.GetRSAPublicKey(user.Username)
+		if err != nil {
+			return entity.Files{}, fmt.Errorf("failed to get user public key: %v", err)
+		}
+
+		userPublicKeyString, err := utils.PublicKeyToPEMString(userPublicKey)
+		if err != nil {
+			return entity.Files{}, fmt.Errorf("failed to convert public key to PEM string: %v", err)
+		}
+
+		signature := fmt.Sprintf("%s\n%s", user.Username, userPublicKeyString)
+		buf, err := utils.AppendDigitalSignature(signature, fileDTO.File)
+		if err != nil {
+			return entity.Files{}, fmt.Errorf("failed to append digital signature: %v", err)
+		}
+		// fmt.Println("Buf: ", buf)
+
+		aesFile, rc4File, desFile, err := utils.UploadFileSignaturePDF(buf, fileDTO.File.Filename, encryptedFilePath, secretKey, secretKey8Byte)
+		if err != nil {
+			return entity.Files{}, fmt.Errorf("failed to upload and encrypt file: %v", err)
+		}
+
 		// Sign the PDF file
 		fileBytes := []byte(aesFile)
 		// fmt.Println("File Bytes: ", fileBytes)
@@ -87,13 +100,24 @@ func (fs *fileService) UploadFile(ctx context.Context, fileDTO dto.FileCreateDto
 		if err != nil {
 			return entity.Files{}, fmt.Errorf("failed to generate digital signature: %v", err)
 		}
+
+		file.Files_AES = aesFile
+		file.Files_RC4 = rc4File
+		file.Files_DES = desFile
+		file.Signature = digitalSignature
+
+	} else {
+
+		aesFile, rc4File, desFile, err := utils.UploadFile(fileDTO.File, encryptedFilePath, secretKey, secretKey8Byte)
+		if err != nil {
+			return entity.Files{}, fmt.Errorf("failed to upload and encrypt file: %v", err)
+		}
+
+		file.Files_AES = aesFile
+		file.Files_RC4 = rc4File
+		file.Files_DES = desFile
 	}
 	// Store the paths of the encrypted files in the entity
-
-	file.Files_AES = aesFile
-	file.Files_RC4 = rc4File
-	file.Files_DES = desFile
-	file.Signature = digitalSignature
 
 	uploadedFile, err := fs.fileRepository.UploadFile(ctx, file)
 	if err != nil {
@@ -207,13 +231,42 @@ func (f *fileService) CheckFileDigitalSignature(ctx context.Context, fileID uuid
 	if err != nil {
 		return false, fmt.Errorf("failed to retrieve file: %v", err)
 	}
-	
+
 	// bytes := []byte(decryptedAESPath)
 	check, err := utils.VerifyDigitalSignature(signature, file.Signature)
 	if err != nil {
 		return false, fmt.Errorf("failed to verify digital signature: %v", err)
 	}
 	// fmt.Println("Check: ", check)
+
+	return check, nil
+}
+
+func (f *fileService) VerifyEmbeddedSignature(ctx context.Context, fileDTO dto.VerifyEmbeddedSignatureDto, userID uuid.UUID) (bool, error) {
+	user, err := f.userRepository.FindUserByID(ctx, userID)
+	if err != nil {
+		return false, fmt.Errorf("failed to retrieve user data: %v", err)
+	}
+
+	fileType := fileDTO.File.Header.Get("Content-Type")
+	if fileType != "application/pdf" {
+		return false, errors.New("unsupported file type")
+	}
+
+	userPublicKey, err := utils.GetRSAPublicKey(user.Username)
+	if err != nil {
+		return false, fmt.Errorf("failed to get user public key: %v", err)
+	}
+
+	userPublicKeyString, err := utils.PublicKeyToPEMString(userPublicKey)
+	if err != nil {
+		return false, fmt.Errorf("failed to convert public key to PEM string: %v", err)
+	}
+
+	check, err := utils.VerifyEmbeddedSignature(fileDTO.File, user.Username, userPublicKeyString)
+	if err != nil {
+		return false, fmt.Errorf("failed to verify embedded signature: %v", err)
+	}
 
 	return check, nil
 }

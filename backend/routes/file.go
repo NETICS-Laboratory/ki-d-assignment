@@ -15,5 +15,6 @@ func FileRoutes(router *gin.Engine, fileController controller.FileController, jw
 		fileRoutes.GET("/get-files", middleware.Authenticate(jwtService), fileController.GetUserFiles)
 		fileRoutes.POST("/get-file-decrypted", middleware.Authenticate(jwtService), fileController.GetUserFileDecrypted)
 		fileRoutes.POST("/verify-digital-signature", middleware.Authenticate(jwtService), fileController.VerifyFileSignature)
+		fileRoutes.POST("/verify-embedded-signature", middleware.Authenticate(jwtService), fileController.VerifyEmbeddedSignature)
 	}
 }

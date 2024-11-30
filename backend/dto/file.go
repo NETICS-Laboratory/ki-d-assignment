@@ -23,16 +23,11 @@ type FileDecryptedResponse struct {
 	Signature     string    `json:"signature"`
 }
 
-type FileSignDto struct {
-	FileID uuid.UUID `json:"file_id" form:"file_id" binding:"required"`
-}
-
-type FileSignResponse struct {
-	FileID    uuid.UUID `json:"file_id"`
-	Signature string    `json:"signature"`
-}
-
 type FileVerifySignatureDto struct {
 	FileID    uuid.UUID `json:"file_id" form:"file_id" binding:"required"`
 	Signature string    `json:"signature" form:"signature" binding:"required"`
+}
+
+type VerifyEmbeddedSignatureDto struct {
+	File *multipart.FileHeader `json:"file" form:"file" binding:"required"`
 }

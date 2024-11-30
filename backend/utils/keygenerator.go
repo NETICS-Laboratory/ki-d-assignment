@@ -85,12 +85,12 @@ func GetRSAPublicKey(user string) (*rsa.PublicKey, error) {
 	// Get the user's public key
 	// fmt.Println("Getting public key for user:", user)
 	publicKeyPath := fmt.Sprintf("uploads/%s/secret/public_key.pem", user)
-	
+
 	publicKeyFile, err := os.ReadFile(publicKeyPath)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	publicKeyBlock, _ := pem.Decode(publicKeyFile)
 	publicKey, err := x509.ParsePKCS1PublicKey(publicKeyBlock.Bytes)
 	if err != nil {
@@ -98,4 +98,21 @@ func GetRSAPublicKey(user string) (*rsa.PublicKey, error) {
 	}
 
 	return publicKey, nil
+}
+
+func PublicKeyToPEMString(pubKey *rsa.PublicKey) (string, error) {
+	// Convert the public key to DER-encoded PKIX format
+	pubKeyDER, err := x509.MarshalPKIXPublicKey(pubKey)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal public key: %v", err)
+	}
+
+	// Create a PEM block for the public key
+	pubKeyPEM := pem.EncodeToMemory(&pem.Block{
+		Type:  "RSA PUBLIC KEY",
+		Bytes: pubKeyDER,
+	})
+
+	// Convert PEM block to a string
+	return string(pubKeyPEM), nil
 }
