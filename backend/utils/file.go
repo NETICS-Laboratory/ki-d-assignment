@@ -125,6 +125,61 @@ func UploadFile(fileHeader *multipart.FileHeader, filePath string, secretKey []b
 	return aesFile, rc4File, desFile, nil
 }
 
+func UploadFileSignaturePDF(signedFile []byte, filename string, filePath string, secretKey []byte, secretKey8Byte []byte) (string, string, string, error) {
+	// Create user directory based on filePath (user.ID)
+	if err := os.MkdirAll(filePath, 0755); err != nil {
+		return "", "", "", err
+	}
+
+	encryptedFileAES, err := EncryptFileBytesAES(signedFile, secretKey)
+	if err != nil {
+		return "", "", "", err
+	}
+
+	encryptedFileRC4, err := EncryptFileBytesRC4(signedFile, secretKey)
+	if err != nil {
+		return "", "", "", err
+	}
+
+	encryptedFileDES, err := EncryptFileBytesDES(signedFile, secretKey8Byte)
+	if err != nil {
+		return "", "", "", err
+	}
+
+	// Store encrypted AES file with .aes extension
+	aesPath := filepath.Join(filePath, "aes")
+	if err := os.MkdirAll(aesPath, 0755); err != nil {
+		return "", "", "", err
+	}
+	aesFile := filepath.Join(aesPath, filename+".aes")
+	if err := os.WriteFile(aesFile, encryptedFileAES, 0644); err != nil {
+		return "", "", "", err
+	}
+
+	// Store encrypted RC4 file with .rc4 extension
+	rc4Path := filepath.Join(filePath, "rc4")
+	if err := os.MkdirAll(rc4Path, 0755); err != nil {
+		return "", "", "", err
+	}
+	rc4File := filepath.Join(rc4Path, filename+".rc4")
+	if err := os.WriteFile(rc4File, encryptedFileRC4, 0644); err != nil {
+		return "", "", "", err
+	}
+
+	// Store encrypted DES file with .des extension
+	desPath := filepath.Join(filePath, "des")
+	if err := os.MkdirAll(desPath, 0755); err != nil {
+		return "", "", "", err
+	}
+	desFile := filepath.Join(desPath, filename+".des")
+	if err := os.WriteFile(desFile, encryptedFileDES, 0644); err != nil {
+		return "", "", "", err
+	}
+
+	// Return the paths of the encrypted files
+	return aesFile, rc4File, desFile, nil
+}
+
 func DecryptAndSaveFiles(filePath string, aesFilePath string, rc4FilePath string, desFilePath string, secretKey []byte, secretKey8Byte []byte) error {
 	// Create decrypted folder
 	decryptedPath := filepath.Join(filePath, "decrypted")
@@ -199,82 +254,6 @@ func DecryptAndSaveFiles(filePath string, aesFilePath string, rc4FilePath string
 	}
 
 	return nil
-}
-
-func DecryptAndSaveFilesReturnData(filePath string, aesFilePath string, rc4FilePath string, desFilePath string, secretKey []byte, secretKey8Byte []byte) (string, string, string, error) {
-	// Create decrypted folder
-	decryptedPath := filepath.Join(filePath, "decrypted")
-	if err := os.MkdirAll(decryptedPath, 0755); err != nil {
-		return "", "", "", err
-	}
-
-	// Decrypt and save AES file
-	aesDecryptedFolder := filepath.Join(decryptedPath, "aes")
-	if err := os.MkdirAll(aesDecryptedFolder, 0755); err != nil {
-		return "", "", "", err
-	}
-	aesEncryptedData, err := os.ReadFile(aesFilePath)
-	if err != nil {
-		return "", "", "", err
-	}
-	// startAES := time.Now()
-	decryptedAES, err := DecryptFileBytesAES(aesEncryptedData, secretKey)
-	if err != nil {
-		return "", "", "", err
-	}
-	// fmt.Printf("AES File Decryption Time: %.6f ms\n", float64(time.Since(startAES).Nanoseconds())/1e6)
-	// fmt.Printf("AES Decrypted File Size: %d bytes\n\n", len(decryptedAES))
-
-	decryptedAESPath := filepath.Join(aesDecryptedFolder, removeExtension(filepath.Base(aesFilePath), ".aes"))
-	if err := os.WriteFile(decryptedAESPath, decryptedAES, 0644); err != nil {
-		return "", "", "", err
-	}
-
-	// Decrypt and save RC4 file
-	rc4DecryptedFolder := filepath.Join(decryptedPath, "rc4")
-	if err := os.MkdirAll(rc4DecryptedFolder, 0755); err != nil {
-		return "", "", "", err
-	}
-	rc4EncryptedData, err := os.ReadFile(rc4FilePath)
-	if err != nil {
-		return "", "", "", err
-	}
-	// startRC4 := time.Now()
-	decryptedRC4, err := DecryptFileBytesRC4(rc4EncryptedData, secretKey)
-	if err != nil {
-		return "", "", "", err
-	}
-	// fmt.Printf("RC4 File Decryption Time: %.6f ms\n", float64(time.Since(startRC4).Nanoseconds())/1e6)
-	// fmt.Printf("RC4 Decrypted File Size: %d bytes\n\n", len(decryptedRC4))
-
-	decryptedRC4Path := filepath.Join(rc4DecryptedFolder, removeExtension(filepath.Base(rc4FilePath), ".rc4"))
-	if err := os.WriteFile(decryptedRC4Path, decryptedRC4, 0644); err != nil {
-		return "", "", "", err
-	}
-
-	// Decrypt and save DES file
-	desDecryptedFolder := filepath.Join(decryptedPath, "des")
-	if err := os.MkdirAll(desDecryptedFolder, 0755); err != nil {
-		return "", "", "", err
-	}
-	desEncryptedData, err := os.ReadFile(desFilePath)
-	if err != nil {
-		return "", "", "", err
-	}
-	// startDES := time.Now()
-	decryptedDES, err := DecryptFileBytesDES(desEncryptedData, secretKey8Byte)
-	if err != nil {
-		return "", "", "", err
-	}
-	// fmt.Printf("DES File Decryption Time: %.6f ms\n\n", float64(time.Since(startDES).Nanoseconds())/1e6)
-	// fmt.Printf("DES Decrypted File Size: %d bytes\n\n", len(decryptedDES))
-
-	decryptedDESPath := filepath.Join(desDecryptedFolder, removeExtension(filepath.Base(desFilePath), ".des"))
-	if err := os.WriteFile(decryptedDESPath, decryptedDES, 0644); err != nil {
-		return "", "", "", err
-	}
-
-	return decryptedAESPath, decryptedRC4Path, decryptedDESPath, nil
 }
 
 // Kalau mau uji decrypt tapi masih ada extentionnya

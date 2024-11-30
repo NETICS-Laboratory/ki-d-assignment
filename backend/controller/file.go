@@ -14,6 +14,7 @@ type FileController interface {
 	GetUserFiles(ctx *gin.Context)
 	GetUserFileDecrypted(ctx *gin.Context)
 	VerifyFileSignature(ctx *gin.Context)
+	VerifyEmbeddedSignature(ctx *gin.Context)
 }
 
 type fileController struct {
@@ -125,6 +126,34 @@ func (fc *fileController) VerifyFileSignature(ctx *gin.Context) {
 	}
 
 	check, err := fc.fileService.CheckFileDigitalSignature(ctx.Request.Context(), fileDTO.FileID, userID, fileDTO.Signature)
+
+	if err != nil {
+		res := common.BuildErrorResponse("Failed to verify file signature", err.Error(), common.EmptyObj{})
+		ctx.JSON(http.StatusInternalServerError, res)
+		return
+	}
+
+	res := common.BuildResponse(true, "File signature verified successfully", check)
+	ctx.JSON(http.StatusOK, res)
+}
+
+func (fc *fileController) VerifyEmbeddedSignature(ctx *gin.Context) {
+	token := ctx.MustGet("token").(string)
+	userID, err := fc.jwtService.GetUserIDByToken(token)
+	if err != nil {
+		response := common.BuildErrorResponse("Failed to process request", "Invalid token", nil)
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, response)
+		return
+	}
+
+	var fileDTO dto.VerifyEmbeddedSignatureDto
+	if err := ctx.ShouldBind(&fileDTO); err != nil {
+		res := common.BuildErrorResponse("Validation Error", err.Error(), common.EmptyObj{})
+		ctx.JSON(http.StatusBadRequest, res)
+		return
+	}
+
+	check, err := fc.fileService.VerifyEmbeddedSignature(ctx.Request.Context(), fileDTO, userID)
 
 	if err != nil {
 		res := common.BuildErrorResponse("Failed to verify file signature", err.Error(), common.EmptyObj{})
