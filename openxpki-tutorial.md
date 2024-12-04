@@ -65,7 +65,7 @@ The roles in OpenXPKI collaborate systematically to deliver a secure and efficie
 1. Locate the downloaded Docker Desktop installer package (.dmg file) in your Downloads folder or the location you specified during the download.
 2. In the mounted disk image, you will see the Docker icon and an Applications folder shortcut. Click and drag the Docker icon onto the Applications folder shortcut. This will copy the Docker Desktop application to your Mac’s Applications folder.
 
-![drag app](https://drive.google.com/file/d/1Fj7eZtt8VRodTa4Lb4-SEPoVwO78Hhps/view?usp=share_link)
+![drag app](https://github.com/laurivasyyy/PBKK-Tugas-2-WebCaptureApp/blob/e0e13ca8548c5423ad342cce1cef3fcc7cbc996b/img/Screenshot%202024-12-04%20at%2013.08.55.png)
 
 #### **Step 3: Verify Docker Desktop Installation**
 1. Once Docker Desktop finishes initializing, you will see the Docker Desktop user interface.
@@ -77,7 +77,7 @@ docker --version
 ```bash
 docker-compose --version
 ```
-![version](https://drive.google.com/file/d/1G58wVAC9f0SqWRdc6MCM7fkpmrDkRrdt/view?usp=sharing)
+![version](https://github.com/laurivasyyy/PBKK-Tugas-2-WebCaptureApp/blob/e0e13ca8548c5423ad342cce1cef3fcc7cbc996b/img/Screenshot%202024-12-04%20at%2013.17.04.png)
 
 ## **6️⃣ OpenXPKI Installation**
 We install OpenXPKI by first cloning the repository of OpenXPKI. We can do that by running this code:
@@ -85,8 +85,6 @@ We install OpenXPKI by first cloning the repository of OpenXPKI. We can do that 
 ```bash
 git clone https://github.com/openxpki/openxpki-docker.git
 ```
-
-![install](https://drive.google.com/file/d/1JGtHsALDPhvRJHCUc0-9JmCG-OUBuiOn/view?usp=sharing)
 
 Now that the cloning process is done, make sure to go to the directory of the repo that we just clone.
 
@@ -105,7 +103,7 @@ cp contrib/wait_on_init.yaml  openxpki-config/config.d/system/local.yaml
 
  After all that is done, inside the directory should look like this:
 
-![image](https://drive.google.com/file/d/1ruHv8bQdODuY1H650j3G6o8ayEzcnrTB/view?usp=share_link)
+![image](https://github.com/laurivasyyy/PBKK-Tugas-2-WebCaptureApp/blob/e0e13ca8548c5423ad342cce1cef3fcc7cbc996b/img/Screenshot%202024-12-04%20at%2013.30.31.png)
 
 Now, to run the docker-compose. Use below make command to start
 
@@ -114,22 +112,21 @@ brew install make
 make compose
 ```
 
-![image](https://drive.google.com/file/d/19gGvBXfeM-A7bTdJAQIoSdiJf1Ph8G9C/view?usp=share_link)
+![image](https://github.com/laurivasyyy/PBKK-Tugas-2-WebCaptureApp/blob/e0e13ca8548c5423ad342cce1cef3fcc7cbc996b/img/Screenshot%202024-12-04%20at%2013.19.48.png)
 
 or
 
 you can just start your docker compose directly from the docker desktop
 
-![image](https://drive.google.com/file/d/1jRn965GDrSH0eKutxavXWmpiIGMGrSyz/view?usp=share_link)
+![image](https://github.com/laurivasyyy/PBKK-Tugas-2-WebCaptureApp/blob/e0e13ca8548c5423ad342cce1cef3fcc7cbc996b/img/Screenshot%202024-12-04%20at%2013.36.32.png)
 
 The Web-Server is now started, to Open the OpenXPKI Web, you can access https://localhost:8443/
 
-![image](https://drive.google.com/file/d/1HJGQOvnuTUgpE-Dx1VjX8RCBNxdJl-sy/view?usp=share_link)
 
 ## **6️⃣ Using OpenXPKI as Common User (CU)**
 
 #### **Step 1: Login using the Test Account**
-![image](https://drive.google.com/file/d/1HJGQOvnuTUgpE-Dx1VjX8RCBNxdJl-sy/view?usp=share_link)
+![image](https://github.com/laurivasyyy/PBKK-Tugas-2-WebCaptureApp/blob/1e9d4e2d4765300ffb7baf414f7cbd46795f4f81/img/Screenshot%202024-12-04%20at%2013.51.48.png)
 
 You can choose to use the `Test Account` and enter `alice` or `bob` as the username for a common user, the password for all accounts is `openxpki`.
 
@@ -137,54 +134,54 @@ You can choose to use the `Test Account` and enter `alice` or `bob` as the usern
 
 To create a profile, we selected `TLS/Web Server` as the certificate profile and the subject style was left as the default.
 
-**insert image**
-
 For the request type, we chose `Generate Key on PKI` to allow the server to generate the private key for you, which is a much safer option.
 
-**insert image**
+![image](https://github.com/laurivasyyy/PBKK-Tugas-2-WebCaptureApp/blob/1e9d4e2d4765300ffb7baf414f7cbd46795f4f81/img/Screenshot%202024-12-04%20at%2020.38.14.png)
 
 To generate the key on PKI, we must select the key parameters. Here, we are choosing `RSA` with a key length of `2048 bit`.
-
-**insert image**
+![image](https://github.com/laurivasyyy/PBKK-Tugas-2-WebCaptureApp/blob/1e9d4e2d4765300ffb7baf414f7cbd46795f4f81/img/Screenshot%202024-12-04%20at%2020.38.18.png)
 
 Now, we need to edit the item in the main subject of the certification request you can enter the `Hostname`, `Additional Hostname`, and `Application Name`.
-
-**insert image**
+![image](https://github.com/laurivasyyy/PBKK-Tugas-2-WebCaptureApp/blob/1e9d4e2d4765300ffb7baf414f7cbd46795f4f81/img/Screenshot%202024-12-04%20at%2020.38.32.png)
 
 To assist our registration officers when validating the certificate request we need to edit the certificate info, in here all the input fields was left as the default.
-
-**insert image**
+![image](https://github.com/laurivasyyy/PBKK-Tugas-2-WebCaptureApp/blob/1e9d4e2d4765300ffb7baf414f7cbd46795f4f81/img/Screenshot%202024-12-04%20at%2020.38.37.png)
 
 Once you’ve completed all the data inputs, you can review your certificate and edit the subject if needed. If everything looks correct, click Continue to submit the request.
 
-**insert image**
+![image](https://github.com/laurivasyyy/PBKK-Tugas-2-WebCaptureApp/blob/1e9d4e2d4765300ffb7baf414f7cbd46795f4f81/img/Screenshot%202024-12-04%20at%2020.38.54.png)
+
 
 After submitting your request, the server will automatically generate a password for you. This password will be used later to download and install your private key.
 
-**insert image**
+![image](https://github.com/laurivasyyy/PBKK-Tugas-2-WebCaptureApp/blob/1e9d4e2d4765300ffb7baf414f7cbd46795f4f81/img/Screenshot%202024-12-04%20at%2020.39.19.png)
 
 Once your request is successfully submitted, you will need to wait for approval by the RA (Registration Authority).
 
-**insert image**
+![image](https://github.com/laurivasyyy/PBKK-Tugas-2-WebCaptureApp/blob/1e9d4e2d4765300ffb7baf414f7cbd46795f4f81/img/Screenshot%202024-12-04%20at%2021.08.54.png)
 
 Once the certification request already issued by the registration authority you can do this :
 
 1. **Downloading the private key :** 
 You can go to the `Action` section to `download the private key` by entering the password you received when you created the request.
-**insert image**
+![image](https://github.com/laurivasyyy/PBKK-Tugas-2-WebCaptureApp/blob/1e9d4e2d4765300ffb7baf414f7cbd46795f4f81/img/Screenshot%202024-12-04%20at%2021.11.52.png)
+
 Once you succeed, you will be directed to the keystore download button.
-**insert image**
+![image](https://github.com/laurivasyyy/PBKK-Tugas-2-WebCaptureApp/blob/1e9d4e2d4765300ffb7baf414f7cbd46795f4f81/img/Screenshot%202024-12-04%20at%2021.12.13.png)
 
 2. **Revoking the Certificate :** 
 You can go to the navbar section `Revoke Certificate`, then enter the `Certificate Identifier` and choose `Certificate Authority Key was compromised` as the reason code.
-**insert image**
+![image](https://github.com/laurivasyyy/PBKK-Tugas-2-WebCaptureApp/blob/1e9d4e2d4765300ffb7baf414f7cbd46795f4f81/img/Screenshot%202024-12-04%20at%2021.12.35.png)
+
 You can see the summary of your revocation request below. After that you can press the submit button to send the revocation request of this certificate.
-**insert image**
+
+![image](https://github.com/laurivasyyy/PBKK-Tugas-2-WebCaptureApp/blob/1e9d4e2d4765300ffb7baf414f7cbd46795f4f81/img/Screenshot%202024-12-04%20at%2021.13.08.png
+)
 
 ## **7️⃣ Using OpenXPKI as Registration Authority (RA)**
 
 #### **Step 1: Login using the Test Account**
-![image](https://drive.google.com/file/d/1HJGQOvnuTUgpE-Dx1VjX8RCBNxdJl-sy/view?usp=share_link)
+![image](https://github.com/laurivasyyy/PBKK-Tugas-2-WebCaptureApp/blob/1e9d4e2d4765300ffb7baf414f7cbd46795f4f81/img/Screenshot%202024-12-04%20at%2013.51.48.png)
 
 You can choose to use the `Test Account` and enter `rob` as the username for the registration authority, the password for all accounts is `openxpki`.
 
@@ -193,29 +190,31 @@ To manage Certificate Request, you can click Home
 -> My Task. Here you can approve or revoke any 
 certificate requests from the common users.
 
-**insert image**
+![image](https://github.com/laurivasyyy/PBKK-Tugas-2-WebCaptureApp/blob/1e9d4e2d4765300ffb7baf414f7cbd46795f4f81/img/Screenshot%202024-12-04%20at%2021.10.03.png)
 
 You will see the common user's certificate request pending approval. You can click on any of them to proceed with approving the request.
 
-**insert image**
+![image](https://github.com/laurivasyyy/PBKK-Tugas-2-WebCaptureApp/blob/1e9d4e2d4765300ffb7baf414f7cbd46795f4f81/img/Screenshot%202024-12-04%20at%2021.10.29.png)
 
 #### **Step 3: Validating the Certificate Request Status**
 
 You must log out from the Registration Authority account and log back in using the Common User's account. Once logged in, navigate to Home -> My Certificate to check if the certificate request has been issued.
 
-**insert image**
+![image](https://github.com/laurivasyyy/PBKK-Tugas-2-WebCaptureApp/blob/1e9d4e2d4765300ffb7baf414f7cbd46795f4f81/img/Screenshot%202024-12-04%20at%2021.11.28.png)
 
 ## **8️⃣ Using OpenXPKI as Certification Authority (CA)**
 
 #### **Step 1: Login using the Test Account**
-![image](https://drive.google.com/file/d/1HJGQOvnuTUgpE-Dx1VjX8RCBNxdJl-sy/view?usp=share_link)
+![image](https://github.com/laurivasyyy/PBKK-Tugas-2-WebCaptureApp/blob/1e9d4e2d4765300ffb7baf414f7cbd46795f4f81/img/Screenshot%202024-12-04%20at%2013.51.48.png)
 
 You can choose to use the `Test Account` and enter `rob` as the username for the certification authority, the password for all accounts is `openxpki`. By default, Rob has a dual role that also acts as a CA.
 
 #### **Step 2: Trigger CRL Issue**
 A revocation list is created when there are new revocations or if the current list is near its expiry. But you can always force to do so by ticking all of the checkbox
 
-**insert image**
+![image](https://github.com/laurivasyyy/PBKK-Tugas-2-WebCaptureApp/blob/1e9d4e2d4765300ffb7baf414f7cbd46795f4f81/img/Screenshot%202024-12-04%20at%2021.14.50.png)
+
+![image](https://github.com/laurivasyyy/PBKK-Tugas-2-WebCaptureApp/blob/1e9d4e2d4765300ffb7baf414f7cbd46795f4f81/img/Screenshot%202024-12-04%20at%2021.16.03.png)
 
 here you can click force wake up and the revocation lists item will be added.
 
