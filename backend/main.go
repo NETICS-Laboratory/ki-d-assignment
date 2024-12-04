@@ -66,6 +66,8 @@ func main() {
 		MaxAge:           12 * time.Hour,
 	}))
 
+	server.Static("/uploads", "./uploads")
+
 	routes.UserRoutes(server, userController, jwtService)
 	routes.FileRoutes(server, fileController, jwtService)
 
