@@ -164,7 +164,6 @@ Once the certification request already issued by the registration authority you 
 
 1. **Downloading the private key :** 
 You can go to the `Action` section to `download the private key` by entering the password you received when you created the request.
-![image](https://github.com/laurivasyyy/PBKK-Tugas-2-WebCaptureApp/blob/1e9d4e2d4765300ffb7baf414f7cbd46795f4f81/img/Screenshot%202024-12-04%20at%2021.11.52.png)
 
 Once you succeed, you will be directed to the keystore download button.
 ![image](https://github.com/laurivasyyy/PBKK-Tugas-2-WebCaptureApp/blob/1e9d4e2d4765300ffb7baf414f7cbd46795f4f81/img/Screenshot%202024-12-04%20at%2021.12.13.png)
